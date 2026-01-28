@@ -63,7 +63,7 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] transition-all duration-300;
+    @apply bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.05)] transition-all duration-300;
   }
 
   .medical-shadow {
@@ -87,6 +87,7 @@
     @apply font-black tracking-tight text-foreground;
     background: linear-gradient(135deg, hsl(224 71% 4%), hsl(217 91% 60%));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 

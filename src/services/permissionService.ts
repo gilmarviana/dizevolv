@@ -71,7 +71,7 @@ export const permissionService = {
     },
 
     // Helper to get default permissions if none exist
-    getDefaults(role: string): Partial<RolePermission>[] {
+    getDefaults(_role: string): Partial<RolePermission>[] {
         // Define default policies here if DB is empty
         return []
     }

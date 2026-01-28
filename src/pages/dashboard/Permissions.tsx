@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
-import { Shield, Eye, Plus, FileEdit, Trash2, FileText, Loader2 } from "lucide-react"
+import { Shield, Eye, Plus, FileEdit, Trash2, FileText } from "lucide-react"
 
 import { useAuth } from "@/contexts/AuthContext"
-import { permissionService, type RolePermission } from "@/services/permissionService"
+import { permissionService } from "@/services/permissionService"
 import { toast } from "sonner"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -50,8 +50,8 @@ interface ModulePermission {
 
 export default function Permissions() {
     const [selectedRole, setSelectedRole] = useState("doctor")
-    const { user: currentUser, profile } = useAuth()
-    const [loading, setLoading] = useState(false)
+    const { profile } = useAuth()
+    const [, setLoading] = useState(false)
     const [customRoles, setCustomRoles] = useState<{ id: string, name: string, slug: string }[]>([])
 
     // Dialog states
