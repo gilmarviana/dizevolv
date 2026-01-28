@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { masterService, type ClinicDetail, type PlanDetail } from "@/services/masterService"
+import { masterService } from "@/services/masterService"
+import { type ClinicDetail, type PlanDetail } from "@/types"
 import {
     Activity,
     AlertCircle,
@@ -857,7 +858,7 @@ function StatusBadge({ status }: { status: ClinicDetail['status'] }) {
         suspended: { label: 'Suspenso', color: 'bg-red-100 text-red-700 border-red-200' },
         trial: { label: 'Degustação', color: 'bg-amber-100 text-amber-700 border-amber-200' },
     }
-    const config = configs[status] || configs.trial
+    const config = configs[status as keyof typeof configs] || configs.trial
     return (
         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${config.color}`}>
             {config.label}

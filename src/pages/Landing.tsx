@@ -19,8 +19,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useState, useEffect } from "react"
-import { masterService, type PlanDetail } from "@/services/masterService"
-import { Menu, X } from "lucide-react"
+import { masterService } from "@/services/masterService"
+import { type PlanDetail } from "@/types"
+import { Menu } from "lucide-react"
 import {
     Sheet,
     SheetContent,

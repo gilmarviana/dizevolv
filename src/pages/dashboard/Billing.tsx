@@ -8,7 +8,8 @@ import { formatPrice } from "@/lib/stripe-config"
 import { type Subscription } from "@/services/billingService"
 import { supabase } from "@/lib/supabase"
 import EmbeddedCheckout from "@/components/EmbeddedCheckout"
-import { masterService, type PlanDetail } from "@/services/masterService"
+import { masterService } from "@/services/masterService"
+import { type PlanDetail } from "@/types"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function Billing() {

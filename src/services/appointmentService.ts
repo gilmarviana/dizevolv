@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase"
 import { auditService } from "./auditService"
 import { emailService } from "./emailService"
 
-import { type Appointment } from "@/types"
+
 
 export const appointmentService = {
     async getAll() {

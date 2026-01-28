@@ -276,13 +276,7 @@ export function AppLayout() {
         return "Painel de Controle";
     }
 
-    const getDaysRemaining = () => {
-        if (!profile?.clinica_trial_ends) return 0
-        const end = new Date(profile.clinica_trial_ends)
-        const now = new Date()
-        const diff = end.getTime() - now.getTime()
-        return Math.ceil(diff / (1000 * 3600 * 24))
-    }
+
 
     return (
         <div className="flex h-screen overflow-hidden bg-transparent">

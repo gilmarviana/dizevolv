@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from "react"
 import { documentService } from "@/services/documentService"
-import { patientService, type Patient } from "@/services/patientService"
+import { patientService } from "@/services/patientService"
+import { type Patient } from "@/types"
 import { useAuth } from "@/contexts/AuthContext"
 import {
     FileText,
