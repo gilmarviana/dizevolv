@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (data) {
             console.log("Profile loaded:", data)
-            // @ts-ignore
+
             const clinicaData = data.clinicas
             setProfile({
                 ...data,

@@ -55,7 +55,7 @@ export default function Login() {
             } else {
                 navigate("/dashboard")
             }
-        } catch (err) {
+        } catch (_err) {
             setError("Erro de conexão. Tente novamente.")
         } finally {
             setLoading(false)

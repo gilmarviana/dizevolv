@@ -134,7 +134,7 @@ export default function Appointments() {
             // Filter out any mock appointments that might still be in the data
             const realAppointments = appointmentsData.filter(apt => !apt.id.startsWith('mock-'))
             setAppointments(realAppointments)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao carregar dados.")
         } finally {
             setLoading(false)
@@ -208,7 +208,7 @@ export default function Appointments() {
             setIsModalOpen(false)
             setEditingAppointment(null)
             loadData()
-        } catch (error) {
+        } catch (_error) {
             toast.error(editingAppointment ? "Erro ao atualizar agendamento." : "Erro ao salvar agendamento.")
         } finally {
             setSubmitting(false)
@@ -236,7 +236,7 @@ export default function Appointments() {
             await appointmentService.updateStatus(id, status)
             toast.success(`Status atualizado para ${status === 'confirmed' ? 'Confirmado' : status === 'cancelled' ? 'Cancelado' : 'Concluído'}`)
             loadData()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao atualizar status.")
         }
     }
@@ -252,7 +252,7 @@ export default function Appointments() {
             await appointmentService.delete(id)
             toast.success("Agendamento removido.")
             loadData()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao remover agendamento.")
         }
     }

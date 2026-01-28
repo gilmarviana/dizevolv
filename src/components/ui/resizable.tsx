@@ -1,14 +1,14 @@
 "use client"
 
 import { GripVertical } from "lucide-react"
-// @ts-ignore
+// @ts-expect-error - missing types
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
 const ResizablePanelGroup = ({
   className,
-  // @ts-ignore
+
   ...props
 }: React.ComponentProps<typeof PanelGroup>) => (
   <PanelGroup
@@ -26,7 +26,7 @@ const ResizableHandle = ({
   withHandle,
   className,
   ...props
-  // @ts-ignore
+
 }: React.ComponentProps<typeof PanelResizeHandle> & {
   withHandle?: boolean
 }) => (
