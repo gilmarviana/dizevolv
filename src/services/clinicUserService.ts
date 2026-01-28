@@ -51,7 +51,24 @@ export const clinicUserService = {
 
         if (error) {
             console.error("Invite error:", error)
-            throw new Error("Falha ao criar convite. Verifique se o email já está em uso.")
+            // Tenta obter mensagem detalhada se disponível
+            let errorMessage = "Falha ao criar convite."
+
+            if (error instanceof Error) {
+                try {
+                    // @ts-ignore - Supabase invite implementation might return body in a specific way or just message
+                    const body = await error.context?.json()
+                    if (body && body.error) {
+                        errorMessage = body.error
+                    } else {
+                        errorMessage = error.message
+                    }
+                } catch (e) {
+                    errorMessage = error.message
+                }
+            }
+
+            throw new Error(errorMessage)
         }
 
         return data

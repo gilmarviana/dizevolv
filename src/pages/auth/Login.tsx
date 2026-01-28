@@ -46,9 +46,9 @@ export default function Login() {
             if (error) {
                 console.error("Login failed:", error.message)
                 if (error.message.includes("Email not confirmed")) {
-                    setError("E-mail não confirmado. Verifique sua caixa de entrada do e-mail.")
+                    setError("Conta não ativada. Verifique a caixa de entrada do seu e-mail para confirmar o cadastro.")
                 } else if (error.message.includes("Invalid login credentials")) {
-                    setError("Credenciais incorretas. Verifique seu e-mail e senha.")
+                    setError("Credenciais incorretas ou conta não ativada. Verifique se digitou a senha correta e se confirmou seu e-mail.")
                 } else {
                     setError("Erro ao entrar. " + error.message)
                 }

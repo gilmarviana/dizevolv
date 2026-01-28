@@ -16,7 +16,8 @@ import {
     CheckCircle2,
     XCircle,
     FileText,
-    ShieldAlert
+    ShieldAlert,
+    RefreshCw
 } from "lucide-react"
 
 import { usePermission } from "@/contexts/PermissionContext"
@@ -31,7 +32,7 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -55,6 +56,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -66,12 +74,35 @@ const formSchema = z.object({
     notes: z.string().optional(),
 })
 
+// Helper to convert local datetime input to UTC for storage
+function convertLocalToUTC(localDateTimeString: string): string {
+    // Parse the input as local time (São Paulo)
+    const localDate = new Date(localDateTimeString)
+    // Return as ISO string (UTC)
+    return localDate.toISOString()
+}
+
+// Helper to convert UTC datetime from database to local for form editing
+function convertUTCToLocal(utcDateTimeString: string): string {
+    // Parse UTC datetime
+    const utcDate = new Date(utcDateTimeString)
+    // Get local datetime components
+    const year = utcDate.getFullYear()
+    const month = String(utcDate.getMonth() + 1).padStart(2, '0')
+    const day = String(utcDate.getDate()).padStart(2, '0')
+    const hours = String(utcDate.getHours()).padStart(2, '0')
+    const minutes = String(utcDate.getMinutes()).padStart(2, '0')
+    // Return in format for datetime-local input (YYYY-MM-DDTHH:mm)
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export default function Appointments() {
     const { can, loading: loadingPermissions } = usePermission()
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [patients, setPatients] = useState<Patient[]>([])
     const [loading, setLoading] = useState(true)
-    const [isAdding, setIsAdding] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
     const [submitting, setSubmitting] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -83,6 +114,23 @@ export default function Appointments() {
         loadData()
     }, [])
 
+    // Reset form when modal opens/closes or editing changes
+    useEffect(() => {
+        if (isModalOpen && editingAppointment) {
+            // Populate form with editing data - convert UTC to local time
+            form.reset({
+                patient_id: editingAppointment.paciente_id,
+                date: convertUTCToLocal(editingAppointment.data_hora),
+                type: editingAppointment.tipo,
+                notes: editingAppointment.observacoes || ""
+            })
+        } else if (!isModalOpen) {
+            // Reset to defaults when closing
+            form.reset({ patient_id: "", date: "", type: "Consulta Geral", notes: "" })
+            setEditingAppointment(null)
+        }
+    }, [isModalOpen, editingAppointment, form])
+
     async function loadData() {
         try {
             setLoading(true)
@@ -90,34 +138,149 @@ export default function Appointments() {
                 appointmentService.getAll(),
                 patientService.getAll()
             ])
-            setAppointments(appointmentsData)
+
             setPatients(patientsData)
+
+            // If no appointments exist and we have patients, create sample appointments
+            if (appointmentsData.length === 0 && patientsData.length > 0) {
+                await createSampleAppointments(patientsData)
+                // Reload the page to clear any cached data and fetch fresh appointments
+                window.location.reload()
+                return
+            }
+
+            // Filter out any mock appointments that might still be in the data
+            const realAppointments = appointmentsData.filter(apt => !apt.id.startsWith('mock-'))
+            setAppointments(realAppointments)
         } catch (error) {
-            toast.error("Erro ao carregar dados da agenda.")
+            toast.error("Erro ao carregar dados.")
         } finally {
             setLoading(false)
+        }
+    }
+
+    async function recreateSampleData() {
+        if (!confirm("Isso irá recriar os agendamentos de exemplo. Continuar?")) return
+
+        try {
+            setLoading(true)
+            const patientsData = await patientService.getAll()
+            if (patientsData.length === 0) {
+                toast.error("Cadastre pacientes primeiro para criar agendamentos de exemplo.")
+                return
+            }
+
+            await createSampleAppointments(patientsData)
+            toast.success("Agendamentos de exemplo recriados!")
+            window.location.reload()
+        } catch (error) {
+            toast.error("Erro ao recriar agendamentos.")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function createSampleAppointments(patients: Patient[]) {
+        const appointmentTypes = [
+            'Consulta Geral',
+            'Retorno',
+            'Exame de Rotina',
+            'Avaliação Cardiológica',
+            'Check-up Completo',
+            'Consulta de Urgência',
+            'Acompanhamento',
+            'Procedimento Cirúrgico',
+            'Fisioterapia',
+            'Avaliação Nutricional'
+        ]
+
+        const statuses: Appointment['status'][] = ['scheduled', 'confirmed', 'scheduled', 'confirmed', 'completed', 'scheduled']
+        const now = new Date()
+
+        try {
+            // Create 15 sample appointments
+            const promises = []
+            for (let i = 0; i < 15; i++) {
+                const daysOffset = Math.floor(i / 3)
+                const hourOffset = (i % 3) * 2 + 8
+
+                const appointmentDate = new Date(now)
+                appointmentDate.setDate(now.getDate() + daysOffset)
+                appointmentDate.setHours(hourOffset, 0, 0, 0)
+
+                const randomPatient = patients[i % patients.length]
+                const randomType = appointmentTypes[i % appointmentTypes.length]
+                const randomStatus = statuses[i % statuses.length]
+
+                promises.push(
+                    appointmentService.create({
+                        patient_id: randomPatient.id,
+                        date: appointmentDate.toISOString(),
+                        type: randomType,
+                        status: randomStatus,
+                        notes: i % 4 === 0 ? 'Paciente solicitou horário prioritário' : undefined
+                    } as any)
+                )
+            }
+
+            await Promise.all(promises)
+            toast.success("15 agendamentos de exemplo foram criados!")
+        } catch (error) {
+            console.error("Erro ao criar agendamentos de exemplo:", error)
         }
     }
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setSubmitting(true)
         try {
-            await appointmentService.create({
-                ...values,
-                status: 'scheduled'
-            } as any)
+            // Convert local datetime to UTC for storage
+            const utcDate = convertLocalToUTC(values.date)
+
+            if (editingAppointment) {
+                // Update existing appointment
+                await appointmentService.update(editingAppointment.id, {
+                    ...values,
+                    date: utcDate,
+                    status: editingAppointment.status
+                } as any)
+                toast.success("Agendamento atualizado com sucesso!")
+            } else {
+                // Create new appointment
+                await appointmentService.create({
+                    ...values,
+                    date: utcDate,
+                    status: 'scheduled'
+                } as any)
+                toast.success("Agendamento realizado com sucesso!")
+            }
             form.reset()
-            setIsAdding(false)
+            setIsModalOpen(false)
+            setEditingAppointment(null)
             loadData()
-            toast.success("Agendamento realizado com sucesso!")
         } catch (error) {
-            toast.error("Erro ao salvar agendamento.")
+            toast.error(editingAppointment ? "Erro ao atualizar agendamento." : "Erro ao salvar agendamento.")
         } finally {
             setSubmitting(false)
         }
     }
 
+    function handleEdit(appointment: Appointment) {
+        setEditingAppointment(appointment)
+        setIsModalOpen(true)
+    }
+
+    function handleCloseModal() {
+        setIsModalOpen(false)
+        setEditingAppointment(null)
+        form.reset()
+    }
+
     async function handleStatusChange(id: string, status: Appointment['status']) {
+        // Safety check for any lingering mock data
+        if (id.startsWith('mock-')) {
+            toast.warning("Dados inválidos detectados. Recarregue a página.")
+            return
+        }
         try {
             await appointmentService.updateStatus(id, status)
             toast.success(`Status atualizado para ${status === 'confirmed' ? 'Confirmado' : status === 'cancelled' ? 'Cancelado' : 'Concluído'}`)
@@ -128,6 +291,11 @@ export default function Appointments() {
     }
 
     async function handleDelete(id: string) {
+        // Safety check for any lingering mock data
+        if (id.startsWith('mock-')) {
+            toast.warning("Dados inválidos detectados. Recarregue a página.")
+            return
+        }
         if (!confirm("Remover este agendamento permanentemente?")) return
         try {
             await appointmentService.delete(id)
@@ -163,86 +331,108 @@ export default function Appointments() {
                     <h1 className="text-4xl font-extrabold tracking-tight text-foreground/80">Agenda Clínica</h1>
                     <p className="text-muted-foreground/80 font-medium">Gestão de horários, consultas e procedimentos.</p>
                 </div>
-                {can('appointments', 'create') && (
-                    <Button onClick={() => setIsAdding(!isAdding)} className="rounded-full font-bold px-8 bg-primary medical-shadow h-12">
-                        {isAdding ? "Fechar Agendador" : (
-                            <>
-                                <Plus className="mr-2 h-5 w-5" />
-                                Novo Agendamento
-                            </>
-                        )}
+                <div className="flex gap-3">
+                    {can('appointments', 'create') && (
+                        <Button onClick={() => setIsModalOpen(true)} className="rounded-full font-bold px-8 bg-primary medical-shadow h-12">
+                            <Plus className="mr-2 h-5 w-5" />
+                            Novo Agendamento
+                        </Button>
+                    )}
+                    <Button
+                        onClick={() => window.location.reload()}
+                        variant="outline"
+                        className="rounded-full font-bold px-6 h-12"
+                        title="Recarregar dados"
+                    >
+                        <RefreshCw className="h-5 w-5" />
                     </Button>
-                )}
+                </div>
             </div>
 
-            {isAdding && (
-                <Card className="glass border-none medical-shadow animate-in slide-in-from-top-6 duration-500">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-bold text-primary">Novo Horário</CardTitle>
-                        <CardDescription className="font-semibold text-muted-foreground/60">Selecione o paciente e defina o tipo de atendimento</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end p-2">
-                                <FormField
-                                    control={form.control}
-                                    name="patient_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Paciente</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger className="h-12 rounded-xl bg-white/50 border-primary/10">
-                                                        <SelectValue placeholder="Selecione..." />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent className="rounded-2xl medical-shadow border-none">
-                                                    {patients.map(p => (
-                                                        <SelectItem key={p.id} value={p.id} className="rounded-xl font-bold">{p.nome}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="date"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Data e Hora</FormLabel>
+            {/* Modal for Create/Edit */}
+            <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+                <DialogContent className="sm:max-w-[600px] glass border-none medical-shadow">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-primary">
+                            {editingAppointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+                        </DialogTitle>
+                        <DialogDescription className="font-semibold text-muted-foreground/60">
+                            {editingAppointment ? 'Atualize as informações do agendamento' : 'Selecione o paciente e defina o tipo de atendimento'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                            <FormField
+                                control={form.control}
+                                name="patient_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Paciente</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
-                                                <Input type="datetime-local" className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
+                                                <SelectTrigger className="h-12 rounded-xl bg-white/50 border-primary/10">
+                                                    <SelectValue placeholder="Selecione..." />
+                                                </SelectTrigger>
                                             </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="type"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Procedimento</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Ex: Consulta, Retorno, Exame" className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="flex gap-4">
-                                    <Button type="submit" className="flex-1 h-12 rounded-full font-bold" disabled={submitting}>
-                                        {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Agendar Agora"}
-                                    </Button>
-                                    <Button type="button" variant="ghost" className="h-12 rounded-full font-bold px-6" onClick={() => setIsAdding(false)}>Sair</Button>
-                                </div>
-                            </form>
-                        </Form>
-                    </CardContent>
-                </Card>
-            )}
+                                            <SelectContent className="rounded-2xl medical-shadow border-none">
+                                                {patients.map(p => (
+                                                    <SelectItem key={p.id} value={p.id} className="rounded-xl font-bold">{p.nome}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="date"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Data e Hora</FormLabel>
+                                        <FormControl>
+                                            <Input type="datetime-local" className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Procedimento</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Ex: Consulta, Retorno, Exame" className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="notes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Observações (Opcional)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Notas adicionais..." className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex gap-4 pt-4">
+                                <Button type="submit" className="flex-1 h-12 rounded-full font-bold" disabled={submitting}>
+                                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingAppointment ? "Salvar Alterações" : "Agendar Agora")}
+                                </Button>
+                                <Button type="button" variant="ghost" className="h-12 rounded-full font-bold px-6" onClick={handleCloseModal}>Cancelar</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
 
             <Card className="glass border-none medical-shadow overflow-hidden">
                 <CardHeader className="pb-6">
@@ -286,8 +476,8 @@ export default function Appointments() {
                                                         <Clock className="h-5 w-5" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-black text-foreground/70">{format(new Date(apt.date), "dd 'de' MMM", { locale: ptBR })}</p>
-                                                        <p className="text-xs font-bold text-muted-foreground/50 uppercase">{format(new Date(apt.date), "HH:mm'h'")}</p>
+                                                        <p className="font-black text-foreground/70">{format(new Date(apt.data_hora), "dd 'de' MMM", { locale: ptBR })}</p>
+                                                        <p className="text-xs font-bold text-muted-foreground/50 uppercase">{format(new Date(apt.data_hora), "HH:mm'h'")}</p>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -297,7 +487,7 @@ export default function Appointments() {
                                                         <User className="h-3 w-3 text-primary/40" />
                                                         {apt.paciente?.nome || 'N/A'}
                                                     </p>
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{apt.type}</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{apt.tipo}</p>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -314,6 +504,13 @@ export default function Appointments() {
                                                         <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase font-extrabold text-muted-foreground/40">Controle de Fluxo</DropdownMenuLabel>
                                                         {can('appointments', 'edit') && (
                                                             <>
+                                                                <DropdownMenuItem
+                                                                    className="rounded-xl font-bold cursor-pointer py-2.5"
+                                                                    onClick={() => handleEdit(apt)}
+                                                                >
+                                                                    <FileText className="h-4 w-4 mr-3 text-blue-500" /> Editar Agendamento
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator className="bg-primary/5" />
                                                                 <DropdownMenuItem
                                                                     className="rounded-xl font-bold cursor-pointer py-2.5"
                                                                     onClick={() => handleStatusChange(apt.id, 'confirmed')}
@@ -334,14 +531,16 @@ export default function Appointments() {
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
-                                                        <DropdownMenuSeparator className="bg-primary/5" />
                                                         {can('appointments', 'delete') && (
-                                                            <DropdownMenuItem
-                                                                className="text-destructive rounded-xl font-bold cursor-pointer py-2.5 focus:bg-destructive/5"
-                                                                onClick={() => handleDelete(apt.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 mr-3" /> Remover da Agenda
-                                                            </DropdownMenuItem>
+                                                            <>
+                                                                <DropdownMenuSeparator className="bg-primary/5" />
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive rounded-xl font-bold cursor-pointer py-2.5 focus:bg-destructive/5"
+                                                                    onClick={() => handleDelete(apt.id)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-3" /> Remover da Agenda
+                                                                </DropdownMenuItem>
+                                                            </>
                                                         )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>

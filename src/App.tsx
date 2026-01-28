@@ -17,6 +17,8 @@ import Team from '@/pages/dashboard/Team'
 import Logs from '@/pages/dashboard/Logs'
 import MasterDashboard from '@/pages/dashboard/MasterDashboard'
 import Permissions from '@/pages/dashboard/Permissions'
+import Documents from '@/pages/dashboard/Documents'
+import Billing from '@/pages/dashboard/Billing'
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
               <Route path="logs" element={<Logs />} />
               <Route path="master" element={<MasterDashboard />} />
               <Route path="permissions" element={<Permissions />} />
+              <Route path="documents" element={<Documents />} />
+              <Route path="billing" element={<Billing />} />
             </Route>
 
             {/* Catch-all */}
@@ -53,3 +57,4 @@ export default function App() {
     </AuthProvider>
   )
 }
+

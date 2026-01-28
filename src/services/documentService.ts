@@ -23,6 +23,16 @@ export const documentService = {
         return data as Document[]
     },
 
+    async getAll() {
+        const { data, error } = await supabase
+            .from('documentos')
+            .select('*, pacientes ( nome )')
+            .order('created_at', { ascending: false })
+
+        if (error) throw error
+        return data as (Document & { pacientes?: { nome: string } })[]
+    },
+
     async upload(patientId: string, file: File) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) throw new Error("User not authenticated")

@@ -73,11 +73,18 @@ export default function Permissions() {
 
     // Define available modules
 
-    // Define available modules
+    // Define available modules with categories
     const availableModules = [
-        { id: 'patients', name: 'Pacientes' },
-        { id: 'appointments', name: 'Agendamentos' },
-        { id: 'team', name: 'Equipe' },
+        // Módulos Clínicos
+        { id: 'patients', name: 'Gestão de Pacientes', category: 'Clínico' },
+        { id: 'dashboard', name: 'Visão Geral / Dashboard', category: 'Clínico' },
+        { id: 'appointments', name: 'Atendimentos & Procedimentos', category: 'Clínico' },
+        { id: 'documents', name: 'Gestão de Documentos', category: 'Clínico' },
+
+        // Módulos Administrativos
+        { id: 'team', name: 'Gestão de Equipe', category: 'Administrativo' },
+        { id: 'permissions', name: 'Controle de Permissões', category: 'Administrativo' },
+        { id: 'logs', name: 'Logs e Auditoria', category: 'Administrativo' },
     ]
 
     const [modules, setModules] = useState<ModulePermission[]>([])
@@ -86,7 +93,7 @@ export default function Permissions() {
         if (profile?.clinica_id) {
             loadRoles().then(() => loadPermissions())
         }
-    }, [profile?.clinica_id, selectedRole]) // Reload permissions when role selection changes
+    }, [profile?.clinica_id, selectedRole])
 
     async function loadRoles() {
         if (!profile?.clinica_id) return
@@ -110,11 +117,12 @@ export default function Permissions() {
                 return {
                     id: mod.id,
                     name: mod.name,
+                    category: mod.category,
                     permissions: {
-                        view: found?.can_view ?? false, // Default to false if not set
-                        create: found?.can_create ?? false,
-                        edit: found?.can_edit ?? false,
-                        delete: found?.can_delete ?? false
+                        view: found?.can_view ?? (selectedRole === 'admin'),
+                        create: found?.can_create ?? (selectedRole === 'admin'),
+                        edit: found?.can_edit ?? (selectedRole === 'admin'),
+                        delete: found?.can_delete ?? (selectedRole === 'admin')
                     }
                 }
             })
@@ -130,7 +138,6 @@ export default function Permissions() {
     const handleToggle = async (moduleId: string, type: PermissionLevel) => {
         if (!profile?.clinica_id) return
 
-        // Optimistic UI Update
         const currentModule = modules.find(m => m.id === moduleId)
         if (!currentModule) return
 
@@ -149,7 +156,6 @@ export default function Permissions() {
             return m
         }))
 
-        // Save to DB
         try {
             await permissionService.upsertPermission({
                 clinica_id: profile.clinica_id,
@@ -163,7 +169,6 @@ export default function Permissions() {
             toast.success("Permissão salva.")
         } catch (error) {
             toast.error("Erro ao salvar permissão.")
-            // Revert on error (optional, but good UX)
             loadPermissions()
         }
     }
@@ -173,8 +178,6 @@ export default function Permissions() {
 
         try {
             const slug = newRoleName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_")
-
-            // Optimistic update not strictly needed for roles as we reload
             await permissionService.createRole({
                 clinica_id: profile.clinica_id,
                 name: newRoleName,
@@ -185,11 +188,59 @@ export default function Permissions() {
             setNewRoleName("")
             setIsRoleDialogOpen(false)
             await loadRoles()
-            setSelectedRole(slug) // Switch to new role
+            setSelectedRole(slug)
         } catch (error) {
             toast.error("Erro ao criar perfil. Tente um nome diferente.")
         }
     }
+
+    // Group modules by category for display
+    const clinicalModules = modules.filter(m => (m as any).category === 'Clínico')
+    const adminModules = modules.filter(m => (m as any).category === 'Administrativo')
+
+    const renderModuleRow = (module: any) => (
+        <TableRow key={module.id} className="hover:bg-muted/30 transition-colors border-muted/20">
+            <TableCell className="py-6 px-8 font-semibold text-foreground/80">
+                {module.name}
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Switch
+                        checked={module.permissions.view}
+                        onCheckedChange={() => handleToggle(module.id, 'view')}
+                        className="data-[state=checked]:bg-green-500"
+                    />
+                </div>
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Switch
+                        checked={module.permissions.create}
+                        onCheckedChange={() => handleToggle(module.id, 'create')}
+                        className="data-[state=checked]:bg-emerald-500"
+                    />
+                </div>
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Switch
+                        checked={module.permissions.edit}
+                        onCheckedChange={() => handleToggle(module.id, 'edit')}
+                        className="data-[state=checked]:bg-blue-500"
+                    />
+                </div>
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Switch
+                        checked={module.permissions.delete}
+                        onCheckedChange={() => handleToggle(module.id, 'delete')}
+                        className="data-[state=checked]:bg-red-500"
+                    />
+                </div>
+            </TableCell>
+        </TableRow>
+    )
 
     return (
         <div className="space-y-8">
@@ -256,14 +307,14 @@ export default function Permissions() {
                 <CardHeader className="pb-4 border-b bg-muted/20">
                     <CardTitle className="flex items-center gap-2 text-base font-bold text-foreground/70">
                         <FileText className="h-5 w-5 text-yellow-500" />
-                        Módulos
+                        Matriz de Permissões
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-transparent hover:bg-transparent border-b">
-                                <TableHead className="py-4 px-8 font-bold text-xs uppercase text-primary/60 w-[30%]">Menu</TableHead>
+                                <TableHead className="py-4 px-8 font-bold text-xs uppercase text-primary/60 w-[30%]">Módulo / Funcionalidade</TableHead>
                                 <TableHead className="text-center font-bold text-xs uppercase text-primary/60">
                                     <div className="flex items-center justify-center gap-2 text-foreground/60">
                                         <Eye className="h-4 w-4" /> Ver
@@ -287,55 +338,30 @@ export default function Permissions() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {modules.map((module) => (
-                                <TableRow key={module.id} className="hover:bg-muted/30 transition-colors border-muted/20">
-                                    <TableCell className="py-6 px-8 font-semibold text-foreground/80">
-                                        {module.name}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex justify-center">
-                                            <Switch
-                                                checked={module.permissions.view}
-                                                onCheckedChange={() => handleToggle(module.id, 'view')}
-                                                className="data-[state=checked]:bg-green-500"
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex justify-center">
-                                            <Switch
-                                                checked={module.permissions.create}
-                                                onCheckedChange={() => handleToggle(module.id, 'create')}
-                                                className="data-[state=checked]:bg-emerald-500"
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex justify-center">
-                                            <Switch
-                                                checked={module.permissions.edit}
-                                                onCheckedChange={() => handleToggle(module.id, 'edit')}
-                                                className="data-[state=checked]:bg-blue-500"
-                                            />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex justify-center">
-                                            <Switch
-                                                checked={module.permissions.delete}
-                                                onCheckedChange={() => handleToggle(module.id, 'delete')}
-                                                className="data-[state=checked]:bg-red-500"
-                                            />
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {/* Clinical Section */}
+                            <TableRow className="bg-primary/5 hover:bg-primary/5">
+                                <TableCell colSpan={5} className="py-2 px-8 font-black text-xs uppercase tracking-[0.2em] text-primary/50">
+                                    Módulos Clínicos & Operacionais
+                                </TableCell>
+                            </TableRow>
+                            {clinicalModules.map(renderModuleRow)}
+
+                            {/* Admin Section - Only for Admin Role */}
+                            {selectedRole === 'admin' && (
+                                <>
+                                    <TableRow className="bg-amber-500/5 hover:bg-amber-500/5 border-t">
+                                        <TableCell colSpan={5} className="py-2 px-8 font-black text-xs uppercase tracking-[0.2em] text-amber-600/50">
+                                            Administração & Sistema
+                                        </TableCell>
+                                    </TableRow>
+                                    {adminModules.map(renderModuleRow)}
+                                </>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
-
-
         </div>
     )
 }
+

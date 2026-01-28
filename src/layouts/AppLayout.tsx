@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -23,8 +24,81 @@ import {
     Building2,
     CreditCard,
     TrendingUp,
-    Clock
+    Clock,
+    ClipboardList,
+    FileText
 } from "lucide-react"
+
+function DoctorMenu() {
+    const location = useLocation()
+    const dashboardPerms = usePermissions('dashboard')
+    const patientsPerms = usePermissions('patients')
+    const appointmentsPerms = usePermissions('appointments')
+    const documentsPerms = usePermissions('documents')
+
+    return (
+        <>
+            {dashboardPerms.view && (
+                <Link
+                    to="/dashboard"
+                    className={`flex items-center gap-4 px-6 py-3 mx-2 rounded-2xl transition-all duration-300 group relative overflow-hidden ${location.pathname === "/dashboard"
+                        ? "bg-primary text-white medical-shadow font-bold"
+                        : "text-foreground/60 hover:bg-primary/5 hover:text-primary font-semibold"
+                        }`}
+                >
+                    <LayoutDashboard className="h-5 w-5" />
+                    <span className="text-sm tracking-wide">Visão Geral</span>
+                </Link>
+            )}
+            {patientsPerms.view && (
+                <Link
+                    to="/dashboard/patients"
+                    className={`flex items-center gap-4 px-6 py-3 mx-2 rounded-2xl transition-all duration-300 group relative overflow-hidden ${location.pathname === "/dashboard/patients"
+                        ? "bg-primary text-white medical-shadow font-bold"
+                        : "text-foreground/60 hover:bg-primary/5 hover:text-primary font-semibold"
+                        }`}
+                >
+                    <Users className="h-5 w-5" />
+                    <span className="text-sm tracking-wide">Meus Pacientes</span>
+                </Link>
+            )}
+            {appointmentsPerms.view && (
+                <Link
+                    to="/dashboard/appointments"
+                    className={`flex items-center gap-4 px-6 py-3 mx-2 rounded-2xl transition-all duration-300 group relative overflow-hidden ${location.pathname === "/dashboard/appointments" || location.pathname === "/dashboard/consultations"
+                        ? "bg-primary text-white medical-shadow font-bold"
+                        : "text-foreground/60 hover:bg-primary/5 hover:text-primary font-semibold"
+                        }`}
+                >
+                    <ClipboardList className="h-5 w-5" />
+                    <span className="text-sm tracking-wide">Atendimentos & Procedimentos</span>
+                </Link>
+            )}
+            {documentsPerms.view && (
+                <Link
+                    to="/dashboard/documents"
+                    className={`flex items-center gap-4 px-6 py-3 mx-2 rounded-2xl transition-all duration-300 group relative overflow-hidden ${location.pathname === "/dashboard/documents"
+                        ? "bg-primary text-white medical-shadow font-bold"
+                        : "text-foreground/60 hover:bg-primary/5 hover:text-primary font-semibold"
+                        }`}
+                >
+                    <FileText className="h-5 w-5" />
+                    <span className="text-sm tracking-wide">Documentos</span>
+                </Link>
+            )}
+            <Link
+                to="/dashboard/billing"
+                className={`flex items-center gap-4 px-6 py-3 mx-2 rounded-2xl transition-all duration-300 group relative overflow-hidden ${location.pathname === "/dashboard/billing"
+                    ? "bg-primary text-white medical-shadow font-bold"
+                    : "text-foreground/60 hover:bg-primary/5 hover:text-primary font-semibold"
+                    }`}
+            >
+                <CreditCard className="h-5 w-5" />
+                <span className="text-sm tracking-wide">Planos e Preços</span>
+            </Link>
+        </>
+    )
+}
 
 export function AppLayout() {
     const { user, profile, loading, signOut } = useAuth()
@@ -142,30 +216,38 @@ export function AppLayout() {
                                 <p className="text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] ml-4">Minha Clínica</p>
                             </div>
 
-                            {/* Visualização de uso do plano */}
-                            <NavItem
-                                href="/dashboard"
-                                icon={<LayoutDashboard className="h-5 w-5" />}
-                                label={profile?.role === 'admin' ? "Uso do Plano & Dashboard" : "Visão Geral"}
-                                active={location.pathname === "/dashboard"}
-                            />
+                            {/* Menu Específico para Médico/Profissional */}
+                            {profile?.role === 'doctor' && <DoctorMenu />}
 
-                            {/* Gestão de pacientes */}
-                            <NavItem
-                                href="/dashboard/patients"
-                                icon={<Users className="h-5 w-5" />}
-                                label="Gestão de Pacientes"
-                                active={location.pathname === "/dashboard/patients"}
-                            />
+                            {/* Menu para Admin e Outros (Fallback/Legacy) */}
+                            {profile?.role !== 'doctor' && (
+                                <>
+                                    {/* Visualização de uso do plano */}
+                                    <NavItem
+                                        href="/dashboard"
+                                        icon={<LayoutDashboard className="h-5 w-5" />}
+                                        label={profile?.role === 'admin' ? "Uso do Plano & Dashboard" : "Visão Geral"}
+                                        active={location.pathname === "/dashboard"}
+                                    />
 
-                            {/* Agenda Médica (Apenas para médicos/profissionais) */}
-                            {profile?.role !== 'admin' && (
-                                <NavItem
-                                    href="/dashboard/appointments"
-                                    icon={<Stethoscope className="h-5 w-5" />}
-                                    label="Agenda Médica"
-                                    active={location.pathname === "/dashboard/appointments"}
-                                />
+                                    {/* Gestão de pacientes */}
+                                    <NavItem
+                                        href="/dashboard/patients"
+                                        icon={<Users className="h-5 w-5" />}
+                                        label="Gestão de Pacientes"
+                                        active={location.pathname === "/dashboard/patients"}
+                                    />
+
+                                    {/* Agenda Médica (Apenas para não-admins que não são doctors - existia antes?) */}
+                                    {profile?.role !== 'admin' && profile?.role !== 'doctor' && (
+                                        <NavItem
+                                            href="/dashboard/appointments"
+                                            icon={<Stethoscope className="h-5 w-5" />}
+                                            label="Agenda Médica"
+                                            active={location.pathname === "/dashboard/appointments"}
+                                        />
+                                    )}
+                                </>
                             )}
 
                             {/* Gestão administrativa exclusiva para Admin */}

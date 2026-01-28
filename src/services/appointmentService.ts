@@ -55,7 +55,40 @@ export const appointmentService = {
 
         if (error) throw error
 
-        await auditService.log('create', 'appointment', data.id, { new_data: data })
+        // Log audit (non-blocking)
+        try {
+            await auditService.log('create', 'appointment', data.id, { new_data: data })
+        } catch (auditError) {
+            console.warn('Audit log failed:', auditError)
+        }
+
+        return data
+    },
+
+    async update(id: string, appointment: { patient_id: string, date: string, type: string, notes?: string, status: string }) {
+        const { data: oldData } = await supabase.from('atendimentos').select('*').eq('id', id).single()
+
+        const { data, error } = await supabase
+            .from('atendimentos')
+            .update({
+                paciente_id: appointment.patient_id,
+                data_hora: appointment.date,
+                tipo: appointment.type,
+                observacoes: appointment.notes,
+                status: appointment.status
+            })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) throw error
+
+        // Log audit (non-blocking)
+        try {
+            await auditService.log('update', 'appointment', id, { old_data: oldData, new_data: data })
+        } catch (auditError) {
+            console.warn('Audit log failed:', auditError)
+        }
 
         return data
     },
@@ -72,7 +105,12 @@ export const appointmentService = {
 
         if (error) throw error
 
-        await auditService.log('update_status', 'appointment', id, { old_data: oldData, new_data: data })
+        // Log audit (non-blocking)
+        try {
+            await auditService.log('update_status', 'appointment', id, { old_data: oldData, new_data: data })
+        } catch (auditError) {
+            console.warn('Audit log failed:', auditError)
+        }
 
         return data
     },
@@ -87,7 +125,12 @@ export const appointmentService = {
 
         if (error) throw error
 
-        await auditService.log('delete', 'appointment', id, { old_data: oldData })
+        // Log audit (non-blocking)
+        try {
+            await auditService.log('delete', 'appointment', id, { old_data: oldData })
+        } catch (auditError) {
+            console.warn('Audit log failed:', auditError)
+        }
 
         return true
     }
