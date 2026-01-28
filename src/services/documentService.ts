@@ -1,15 +1,6 @@
 import { supabase } from "@/lib/supabase"
-
-export interface Document {
-    id: string
-    clinica_id: string
-    patient_id: string
-    user_id: string
-    nome: string
-    tipo: string
-    url: string
-    created_at: string
-}
+import { auditService } from "./auditService"
+import { type PatientDocument } from "@/types"
 
 export const documentService = {
     async getByPatient(patientId: string) {
@@ -20,7 +11,7 @@ export const documentService = {
             .order('created_at', { ascending: false })
 
         if (error) throw error
-        return data as Document[]
+        return data as PatientDocument[]
     },
 
     async getAll() {
@@ -30,7 +21,7 @@ export const documentService = {
             .order('created_at', { ascending: false })
 
         if (error) throw error
-        return data as (Document & { pacientes?: { nome: string } })[]
+        return data as (PatientDocument & { pacientes?: { nome: string } })[]
     },
 
     async upload(patientId: string, file: File) {
@@ -74,7 +65,11 @@ export const documentService = {
             .single()
 
         if (error) throw error
-        return data as Document
+
+        // Log audit
+        await auditService.log('upload_document', 'document', data.id, { new_data: data })
+
+        return data as PatientDocument
     },
 
     async delete(id: string, url: string) {
@@ -93,6 +88,10 @@ export const documentService = {
             .eq('id', id)
 
         if (error) throw error
+
+        // Log audit
+        await auditService.log('delete_document', 'document', id, { old_data: { id, url } })
+
         return true
     }
 }

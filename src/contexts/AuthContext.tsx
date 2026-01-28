@@ -2,16 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 
-type Profile = {
-    id: string
-    clinica_id: string | null
-    clinica_nome?: string
-    clinica_status?: string
-    clinica_trial_ends?: string
-    role: string // Relaxed type for custom roles
-    nome: string
-    email: string
-}
+import { type Profile } from "@/types"
 
 type AuthContextType = {
     session: Session | null

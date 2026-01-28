@@ -1,25 +1,7 @@
 import { supabase } from "@/lib/supabase"
+import { auditService } from "./auditService"
 
-export interface ClinicDetail {
-    id: string
-    nome: string
-    slug: string
-    cnpj: string
-    status: 'active' | 'suspended' | 'trial'
-    plano_id: string
-    created_at: string
-    plano?: {
-        nome: string
-    }
-}
-
-export interface PlanDetail {
-    id: string
-    nome: string
-    limite_pacientes: number
-    preco_mensal: number
-    recursos?: Record<string, boolean | string>
-}
+import { type ClinicDetail, type PlanDetail } from "@/types"
 
 export const masterService = {
     async getClinics() {
@@ -57,6 +39,9 @@ export const masterService = {
             .single()
 
         if (error) throw error
+
+        await auditService.log('update_clinic_status', 'clinic', clinicId, { new_data: { status } })
+
         return data
     },
 
@@ -69,6 +54,9 @@ export const masterService = {
             .single()
 
         if (error) throw error
+
+        await auditService.log('update_clinic_plan', 'clinic', clinicId, { new_data: { plano_id: planoId } })
+
         return data
     },
 
@@ -81,6 +69,9 @@ export const masterService = {
                 .select()
                 .single()
             if (error) throw error
+
+            await auditService.log('update_plan', 'plan', data.id, { new_data: data })
+
             return data
         } else {
             const { data, error } = await supabase
@@ -89,6 +80,9 @@ export const masterService = {
                 .select()
                 .single()
             if (error) throw error
+
+            await auditService.log('create_plan', 'plan', data.id, { new_data: data })
+
             return data
         }
     },
@@ -96,6 +90,9 @@ export const masterService = {
     async deletePlan(id: string) {
         const { error } = await supabase.from('planos').delete().eq('id', id)
         if (error) throw error
+
+        await auditService.log('delete_plan', 'plan', id, { old_data: { id } })
+
         return true
     },
 

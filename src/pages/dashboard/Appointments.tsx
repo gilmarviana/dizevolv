@@ -2,8 +2,18 @@ import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { appointmentService, type Appointment } from "@/services/appointmentService"
-import { patientService, type Patient } from "@/services/patientService"
+import { appointmentService } from "@/services/appointmentService"
+import { patientService } from "@/services/patientService"
+import { type Appointment, type Patient } from "@/types"
+import { convertLocalToUTC, convertUTCToLocal } from "@/utils"
+import { APPOINTMENT_TYPES, APPOINTMENT_STATUS_CONFIG } from "@/constants"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import {
     Plus,
     Calendar,
@@ -50,13 +60,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -74,27 +77,6 @@ const formSchema = z.object({
     notes: z.string().optional(),
 })
 
-// Helper to convert local datetime input to UTC for storage
-function convertLocalToUTC(localDateTimeString: string): string {
-    // Parse the input as local time (São Paulo)
-    const localDate = new Date(localDateTimeString)
-    // Return as ISO string (UTC)
-    return localDate.toISOString()
-}
-
-// Helper to convert UTC datetime from database to local for form editing
-function convertUTCToLocal(utcDateTimeString: string): string {
-    // Parse UTC datetime
-    const utcDate = new Date(utcDateTimeString)
-    // Get local datetime components
-    const year = utcDate.getFullYear()
-    const month = String(utcDate.getMonth() + 1).padStart(2, '0')
-    const day = String(utcDate.getDate()).padStart(2, '0')
-    const hours = String(utcDate.getHours()).padStart(2, '0')
-    const minutes = String(utcDate.getMinutes()).padStart(2, '0')
-    // Return in format for datetime-local input (YYYY-MM-DDTHH:mm)
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-}
 
 export default function Appointments() {
     const { can, loading: loadingPermissions } = usePermission()
@@ -161,18 +143,7 @@ export default function Appointments() {
 
 
     async function createSampleAppointments(patients: Patient[]) {
-        const appointmentTypes = [
-            'Consulta Geral',
-            'Retorno',
-            'Exame de Rotina',
-            'Avaliação Cardiológica',
-            'Check-up Completo',
-            'Consulta de Urgência',
-            'Acompanhamento',
-            'Procedimento Cirúrgico',
-            'Fisioterapia',
-            'Avaliação Nutricional'
-        ]
+        const appointmentTypes = APPOINTMENT_TYPES
 
         const statuses: Appointment['status'][] = ['scheduled', 'confirmed', 'scheduled', 'confirmed', 'completed', 'scheduled']
         const now = new Date()
@@ -383,9 +354,20 @@ export default function Appointments() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs uppercase font-bold text-muted-foreground/70 ml-1">Procedimento</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Ex: Consulta, Retorno, Exame" className="h-12 rounded-xl bg-white/50 border-primary/10" {...field} />
-                                        </FormControl>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="h-12 rounded-xl bg-white/50 border-primary/10">
+                                                    <SelectValue placeholder="Selecione o procedimento" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-xl border-none medical-shadow">
+                                                {APPOINTMENT_TYPES.map((type) => (
+                                                    <SelectItem key={type} value={type} className="rounded-lg">
+                                                        {type}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -428,108 +410,110 @@ export default function Appointments() {
                             <p className="text-sm font-bold text-primary/30 uppercase tracking-[0.2em]">Sincronizando Agenda</p>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-primary/5">
-                                <TableRow className="border-none">
-                                    <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Horário</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Paciente / Tipo</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Status</TableHead>
-                                    <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {appointments.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-64 text-center">
-                                            <div className="flex flex-col items-center gap-3 text-muted-foreground/30 font-bold italic">
-                                                <Calendar className="h-12 w-12 mb-2" />
-                                                Nenhum agendamento para exibir.
-                                            </div>
-                                        </TableCell>
+                        <div className="table-responsive-wrapper">
+                            <Table className="min-w-[800px] md:min-w-full table-mobile-compact">
+                                <TableHeader className="bg-primary/5">
+                                    <TableRow className="border-none">
+                                        <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Horário</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Paciente / Tipo</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Status</TableHead>
+                                        <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">Ações</TableHead>
                                     </TableRow>
-                                ) : (
-                                    appointments.map((apt) => (
-                                        <TableRow key={apt.id} className="group hover:bg-white/60 transition-colors border-primary/5">
-                                            <TableCell className="py-6 px-8">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="bg-primary/5 p-2.5 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                                                        <Clock className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-black text-foreground/70">{format(new Date(apt.data_hora), "dd 'de' MMM", { locale: ptBR })}</p>
-                                                        <p className="text-xs font-bold text-muted-foreground/50 uppercase">{format(new Date(apt.data_hora), "HH:mm'h'")}</p>
-                                                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {appointments.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-64 text-center">
+                                                <div className="flex flex-col items-center gap-3 text-muted-foreground/30 font-bold italic">
+                                                    <Calendar className="h-12 w-12 mb-2" />
+                                                    Nenhum agendamento para exibir.
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="space-y-1">
-                                                    <p className="font-bold text-foreground/70 flex items-center gap-2">
-                                                        <User className="h-3 w-3 text-primary/40" />
-                                                        {apt.paciente?.nome || 'N/A'}
-                                                    </p>
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{apt.tipo}</p>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <StatusBadge status={apt.status} />
-                                            </TableCell>
-                                            <TableCell className="text-right px-8">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-primary/10">
-                                                            <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl medical-shadow border-none">
-                                                        <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase font-extrabold text-muted-foreground/40">Controle de Fluxo</DropdownMenuLabel>
-                                                        {can('appointments', 'edit') && (
-                                                            <>
-                                                                <DropdownMenuItem
-                                                                    className="rounded-xl font-bold cursor-pointer py-2.5"
-                                                                    onClick={() => handleEdit(apt)}
-                                                                >
-                                                                    <FileText className="h-4 w-4 mr-3 text-blue-500" /> Editar Agendamento
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator className="bg-primary/5" />
-                                                                <DropdownMenuItem
-                                                                    className="rounded-xl font-bold cursor-pointer py-2.5"
-                                                                    onClick={() => handleStatusChange(apt.id, 'confirmed')}
-                                                                >
-                                                                    <CheckCircle2 className="h-4 w-4 mr-3 text-green-500" /> Confirmar Presença
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="rounded-xl font-bold cursor-pointer py-2.5"
-                                                                    onClick={() => handleStatusChange(apt.id, 'completed')}
-                                                                >
-                                                                    <CalendarCheck className="h-4 w-4 mr-3 text-primary" /> Finalizar Atendimento
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="text-amber-600 rounded-xl font-bold cursor-pointer py-2.5 focus:bg-amber-50"
-                                                                    onClick={() => handleStatusChange(apt.id, 'cancelled')}
-                                                                >
-                                                                    <XCircle className="h-4 w-4 mr-3" /> Cancelar Horário
-                                                                </DropdownMenuItem>
-                                                            </>
-                                                        )}
-                                                        {can('appointments', 'delete') && (
-                                                            <>
-                                                                <DropdownMenuSeparator className="bg-primary/5" />
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive rounded-xl font-bold cursor-pointer py-2.5 focus:bg-destructive/5"
-                                                                    onClick={() => handleDelete(apt.id)}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-3" /> Remover da Agenda
-                                                                </DropdownMenuItem>
-                                                            </>
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        appointments.map((apt) => (
+                                            <TableRow key={apt.id} className="group hover:bg-white/60 transition-colors border-primary/5">
+                                                <TableCell className="py-6 px-8">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="bg-primary/5 p-2.5 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                                            <Clock className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-foreground/70">{format(new Date(apt.data_hora), "dd 'de' MMM", { locale: ptBR })}</p>
+                                                            <p className="text-xs font-bold text-muted-foreground/50 uppercase">{format(new Date(apt.data_hora), "HH:mm'h'")}</p>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="space-y-1">
+                                                        <p className="font-bold text-foreground/70 flex items-center gap-2">
+                                                            <User className="h-3 w-3 text-primary/40" />
+                                                            {apt.paciente?.nome || 'N/A'}
+                                                        </p>
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{apt.tipo}</p>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusBadge status={apt.status} />
+                                                </TableCell>
+                                                <TableCell className="text-right px-8">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-primary/10">
+                                                                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl medical-shadow border-none">
+                                                            <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase font-extrabold text-muted-foreground/40">Controle de Fluxo</DropdownMenuLabel>
+                                                            {can('appointments', 'edit') && (
+                                                                <>
+                                                                    <DropdownMenuItem
+                                                                        className="rounded-xl font-bold cursor-pointer py-2.5"
+                                                                        onClick={() => handleEdit(apt)}
+                                                                    >
+                                                                        <FileText className="h-4 w-4 mr-3 text-blue-500" /> Editar Agendamento
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator className="bg-primary/5" />
+                                                                    <DropdownMenuItem
+                                                                        className="rounded-xl font-bold cursor-pointer py-2.5"
+                                                                        onClick={() => handleStatusChange(apt.id, 'confirmed')}
+                                                                    >
+                                                                        <CheckCircle2 className="h-4 w-4 mr-3 text-green-500" /> Confirmar Presença
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        className="rounded-xl font-bold cursor-pointer py-2.5"
+                                                                        onClick={() => handleStatusChange(apt.id, 'completed')}
+                                                                    >
+                                                                        <CalendarCheck className="h-4 w-4 mr-3 text-primary" /> Finalizar Atendimento
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        className="text-amber-600 rounded-xl font-bold cursor-pointer py-2.5 focus:bg-amber-50"
+                                                                        onClick={() => handleStatusChange(apt.id, 'cancelled')}
+                                                                    >
+                                                                        <XCircle className="h-4 w-4 mr-3" /> Cancelar Horário
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                            {can('appointments', 'delete') && (
+                                                                <>
+                                                                    <DropdownMenuSeparator className="bg-primary/5" />
+                                                                    <DropdownMenuItem
+                                                                        className="text-destructive rounded-xl font-bold cursor-pointer py-2.5 focus:bg-destructive/5"
+                                                                        onClick={() => handleDelete(apt.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-3" /> Remover da Agenda
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -538,13 +522,7 @@ export default function Appointments() {
 }
 
 function StatusBadge({ status }: { status: Appointment['status'] }) {
-    const configs = {
-        scheduled: { label: 'Agendado', bg: 'bg-primary/10', text: 'text-primary' },
-        confirmed: { label: 'Confirmado', bg: 'bg-green-100', text: 'text-green-700' },
-        cancelled: { label: 'Cancelado', bg: 'bg-red-100', text: 'text-red-700' },
-        completed: { label: 'Concluído', bg: 'bg-gray-100', text: 'text-gray-700' },
-    }
-    const config = configs[status]
+    const config = APPOINTMENT_STATUS_CONFIG[status]
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${config.bg} ${config.text}`}>
             {config.label}

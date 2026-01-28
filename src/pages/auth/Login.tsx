@@ -158,6 +158,54 @@ export default function Login() {
                     </CardFooter>
                 </Card>
             </div>
+
+            <div className="w-full max-w-[420px] mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+                <Card className="glass border-primary/5 bg-white/40 shadow-none">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest text-primary/60 text-center">Acessos de Demonstração</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-xs">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-primary/5 hover:bg-white transition-colors cursor-pointer group" onClick={() => {
+                            form.setValue("email", "gil.gmviana@gmail.com");
+                            form.setValue("password", "123456");
+                        }}>
+                            <div>
+                                <p className="font-black text-primary uppercase text-[10px]">Master</p>
+                                <p className="font-medium text-foreground/70">gil.gmviana@gmail.com</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-muted-foreground/50">123456</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-primary/5 hover:bg-white transition-colors cursor-pointer group" onClick={() => {
+                            form.setValue("email", "mesen47566@1200b.com");
+                            form.setValue("password", "123456");
+                        }}>
+                            <div>
+                                <p className="font-black text-blue-500 uppercase text-[10px]">Admin</p>
+                                <p className="font-medium text-foreground/70">mesen47566@1200b.com</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-muted-foreground/50">123456</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/60 border border-primary/5 hover:bg-white transition-colors cursor-pointer group" onClick={() => {
+                            form.setValue("email", "xegar45802@ixunbo.com");
+                            form.setValue("password", "12345678");
+                        }}>
+                            <div>
+                                <p className="font-black text-emerald-500 uppercase text-[10px]">Usuário</p>
+                                <p className="font-medium text-foreground/70">xegar45802@ixunbo.com</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-muted-foreground/50">12345678</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }

@@ -1,13 +1,7 @@
 import { supabase } from "@/lib/supabase"
+import { auditService } from "./auditService"
 
-export interface ClinicUser {
-    id: string
-    clinica_id: string
-    role: string
-    nome: string
-    email: string
-    created_at: string
-}
+import { type ClinicUser } from "@/types"
 
 export const clinicUserService = {
     async getAll() {
@@ -29,6 +23,9 @@ export const clinicUserService = {
             .single()
 
         if (error) throw error
+
+        await auditService.log('update_user_role', 'user', userId, { new_data: { role } })
+
         return data as ClinicUser
     },
 
@@ -39,6 +36,9 @@ export const clinicUserService = {
             .eq('id', userId)
 
         if (error) throw error
+
+        await auditService.log('delete_user', 'user', userId, { old_data: { id: userId } })
+
         return true
     },
 
@@ -70,6 +70,9 @@ export const clinicUserService = {
 
             throw new Error(errorMessage)
         }
+
+        // Log invite (non-blocking)
+        await auditService.log('invite_user', 'user', userData.email, { new_data: userData })
 
         return data
     }

@@ -1,16 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { auditService } from "./auditService"
 
-export interface Patient {
-    id: string
-    nome: string
-    cpf?: string // Using string for now, could be validated
-    data_nascimento?: string
-    telefone?: string
-    email?: string
-    lgpd_consent?: boolean
-    consent_date?: string
-}
+import { type Patient } from "@/types"
 
 export const patientService = {
     async getAll() {

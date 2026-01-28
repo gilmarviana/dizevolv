@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { AUDIT_ACTION_CONFIGS } from "@/constants"
 
 export default function Logs() {
     const [logs, setLogs] = useState<any[]>([])
@@ -43,8 +44,8 @@ export default function Logs() {
     }
 
     const filteredLogs = logs.filter(log =>
-        log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.entity_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.acao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.entidade_tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.usuario?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
@@ -80,60 +81,62 @@ export default function Logs() {
                             <p className="text-sm font-bold text-primary/30 uppercase tracking-[0.2em]">Recuperando Logs</p>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-primary/5">
-                                <TableRow className="border-none">
-                                    <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Data / Hora</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Usuário</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Ação</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Entidade</TableHead>
-                                    <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">ID Alvo</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredLogs.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="h-64 text-center">
-                                            <div className="flex flex-col items-center gap-3 text-muted-foreground/30 font-bold italic">
-                                                <ShieldAlert className="h-12 w-12 mb-2" />
-                                                Nenhum registro de auditoria encontrado.
-                                            </div>
-                                        </TableCell>
+                        <div className="table-responsive-wrapper">
+                            <Table className="min-w-[900px] md:min-w-full table-mobile-compact">
+                                <TableHeader className="bg-primary/5">
+                                    <TableRow className="border-none">
+                                        <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Data / Hora</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Usuário</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Ação</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Entidade</TableHead>
+                                        <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">ID Alvo</TableHead>
                                     </TableRow>
-                                ) : (
-                                    filteredLogs.map((log) => (
-                                        <TableRow key={log.id} className="group hover:bg-white/60 transition-colors border-primary/5 text-sm">
-                                            <TableCell className="py-4 px-8 font-bold text-muted-foreground">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-3 w-3 text-primary/40" />
-                                                    {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredLogs.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-64 text-center">
+                                                <div className="flex flex-col items-center gap-3 text-muted-foreground/30 font-bold italic">
+                                                    <ShieldAlert className="h-12 w-12 mb-2" />
+                                                    Nenhum registro de auditoria encontrado.
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
-                                                        <User className="h-3 w-3" />
-                                                    </div>
-                                                    <span className="font-bold text-foreground/70">{log.usuario?.nome || 'Sistema'}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <ActionBadge action={log.action} />
-                                            </TableCell>
-                                            <TableCell className="font-extrabold text-[11px] uppercase tracking-widest text-primary/60">
-                                                <div className="flex items-center gap-2">
-                                                    <Database className="h-3 w-3" />
-                                                    {log.entity_type}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right px-8 font-mono text-[10px] text-muted-foreground/40">
-                                                {log.entity_id}
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        filteredLogs.map((log) => (
+                                            <TableRow key={log.id} className="group hover:bg-white/60 transition-colors border-primary/5 text-sm">
+                                                <TableCell className="py-4 px-8 font-bold text-muted-foreground">
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock className="h-3 w-3 text-primary/40" />
+                                                        {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
+                                                            <User className="h-3 w-3" />
+                                                        </div>
+                                                        <span className="font-bold text-foreground/70">{log.usuario?.nome || 'Sistema'}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <ActionBadge action={log.acao} />
+                                                </TableCell>
+                                                <TableCell className="font-extrabold text-[11px] uppercase tracking-widest text-primary/60">
+                                                    <div className="flex items-center gap-2">
+                                                        <Database className="h-3 w-3" />
+                                                        {log.entidade_tipo}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right px-8 font-mono text-[10px] text-muted-foreground/40">
+                                                    {log.entidade_id}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -142,14 +145,7 @@ export default function Logs() {
 }
 
 function ActionBadge({ action }: { action: string }) {
-    const configs: Record<string, { label: string, color: string }> = {
-        'create': { label: 'Criação', color: 'bg-green-100 text-green-700' },
-        'update': { label: 'Edição', color: 'bg-blue-100 text-blue-700' },
-        'update_status': { label: 'Status', color: 'bg-amber-100 text-amber-700' },
-        'delete': { label: 'Exclusão', color: 'bg-red-100 text-red-700' },
-        'login': { label: 'Login', color: 'bg-purple-100 text-purple-700' },
-    }
-    const config = configs[action] || { label: action.toUpperCase(), color: 'bg-gray-100 text-gray-700' }
+    const config = AUDIT_ACTION_CONFIGS[action as keyof typeof AUDIT_ACTION_CONFIGS] || { label: action.toUpperCase(), color: 'bg-gray-100 text-gray-700' }
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${config.color}`}>
             {config.label}

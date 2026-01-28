@@ -20,6 +20,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useState, useEffect } from "react"
 import { masterService, type PlanDetail } from "@/services/masterService"
+import { Menu, X } from "lucide-react"
+import {
+    Sheet,
+    SheetContent,
+    SheetTrigger,
+} from "@/components/ui/sheet"
 
 export function LandingPage() {
     const [plans, setPlans] = useState<PlanDetail[]>([])
@@ -48,11 +54,56 @@ export function LandingPage() {
                         <Link to="/auth/login" className="hidden sm:block">
                             <Button variant="ghost" className="text-sm font-black text-foreground hover:text-primary tracking-tight">Entrar</Button>
                         </Link>
-                        <Link to="/auth/register">
+                        <Link to="/auth/register" className="hidden sm:block">
                             <Button className="h-12 text-sm font-black bg-primary hover:bg-primary/90 text-white rounded-full px-8 premium-shadow transition-all hover:scale-105 active:scale-95">
                                 Experimentar Grátis
                             </Button>
                         </Link>
+                        <div className="lg:hidden">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                                        <Menu className="h-6 w-6" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="right" className="w-[300px] p-0 border-none glass">
+                                    <div className="flex flex-col h-full bg-white/60 backdrop-blur-xl">
+                                        <div className="p-8 border-b border-black/5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-primary rounded-2xl p-2.5">
+                                                    <Heart className="h-6 w-6 text-white fill-white/20" />
+                                                </div>
+                                                <span className="text-2xl font-black tracking-tighter text-foreground">Clinic<span className="text-primary italic">Ops</span></span>
+                                            </div>
+                                        </div>
+                                        <nav className="flex-1 p-6 flex flex-col gap-2">
+                                            {[
+                                                { label: 'Funcionalidades', href: '#features' },
+                                                { label: 'Fluxo de Trabalho', href: '#workflow' },
+                                                { label: 'Mobile App', href: '#mobile' },
+                                                { label: 'Planos e Preços', href: '#pricing' }
+                                            ].map((item) => (
+                                                <a
+                                                    key={item.label}
+                                                    href={item.href}
+                                                    className="px-6 py-4 rounded-2xl text-lg font-bold text-foreground/70 hover:bg-primary/5 hover:text-primary transition-all"
+                                                >
+                                                    {item.label}
+                                                </a>
+                                            ))}
+                                        </nav>
+                                        <div className="p-8 space-y-4 border-t border-black/5">
+                                            <Link to="/auth/login" className="block">
+                                                <Button variant="outline" className="w-full h-14 rounded-2xl font-black border-primary/10 text-primary uppercase text-xs tracking-widest">Entrar</Button>
+                                            </Link>
+                                            <Link to="/auth/register" className="block">
+                                                <Button className="w-full h-14 rounded-2xl font-black bg-primary text-white uppercase text-xs tracking-widest">Começar Agora</Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -394,47 +445,48 @@ export function LandingPage() {
 
             </main>
 
+            {/* Premium Footer */}
             <footer className="py-24 bg-white border-t border-black/[0.05]">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-20 mb-20">
-                        <div className="space-y-8 col-span-1 md:col-span-1">
+                        <div className="space-y-8 col-span-1 md:col-span-2">
                             <div className="flex items-center gap-2">
                                 <Heart className="h-7 w-7 text-primary fill-primary/20" />
-                                <span className="text-3xl font-black tracking-tighter">ClinicOps</span>
+                                <span className="text-3xl font-black tracking-tighter text-foreground">Clinic<span className="text-primary italic">Ops</span></span>
                             </div>
-                            <p className="text-muted-foreground font-medium text-lg leading-relaxed">
+                            <p className="text-xl font-medium text-muted-foreground/80 leading-relaxed max-w-md">
                                 Redefinindo o padrão de eficiência na saúde brasileira com tecnologia de ponta para quem cuida da vida.
                             </p>
                         </div>
                         <div>
                             <h4 className="font-black text-foreground mb-8 uppercase text-xs tracking-[0.4em]">Produto</h4>
                             <ul className="space-y-5 text-sm font-black text-muted-foreground uppercase tracking-widest">
-                                <li><a href="#" className="hover:text-primary transition-colors">Funcionalidades</a></li>
-                                <li><a href="#" className="hover:text-primary transition-colors">App Mobile</a></li>
-                                <li><a href="#" className="hover:text-primary transition-colors">Segurança RLS</a></li>
+                                <li><a href="#features" className="hover:text-primary transition-colors">Funcionalidades</a></li>
+                                <li><a href="#mobile" className="hover:text-primary transition-colors">App Mobile</a></li>
+                                <li><a href="#workflow" className="hover:text-primary transition-colors">Workflow</a></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-black text-foreground mb-8 uppercase text-xs tracking-[0.4em]">Infra</h4>
-                            <ul className="space-y-5 text-sm font-black text-muted-foreground uppercase tracking-widest">
-                                <li><a href="#" className="hover:text-primary transition-colors">Compliance LGPD</a></li>
-                                <li><a href="#" className="hover:text-primary transition-colors">Termos de Uso</a></li>
-                                <li><a href="#" className="hover:text-primary transition-colors">API Docs</a></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-black text-foreground mb-8 uppercase text-xs tracking-[0.4em]">Suporte</h4>
+                            <h4 className="font-black text-foreground mb-8 uppercase text-xs tracking-[0.4em]">Contato</h4>
                             <ul className="space-y-5 text-sm font-black text-muted-foreground uppercase tracking-widest">
                                 <li><a href="#" className="text-primary font-black">comercial@clinicops.com</a></li>
-                                <li><a href="#" className="hover:text-primary transition-colors">Ajuda 24/7</a></li>
+                                <li><a href="#" className="hover:text-primary transition-colors">Suporte 24/7</a></li>
                             </ul>
                         </div>
                     </div>
-                    <div className="pt-12 border-t border-black/[0.05] flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
-                        <p>© 2026 CLINICOPS. SISTEMAS DE GESTÃO PARA SAÚDE.</p>
-                        <div className="flex gap-12">
-                            <span className="hover:text-primary transition-colors cursor-pointer">SÃO PAULO / BR</span>
-                            <span className="text-primary/40">V1.5.0 STABLE</span>
+
+                    <div className="pt-12 border-t border-black/[0.05] flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="flex flex-col items-center md:items-start gap-2">
+                            <p className="text-sm font-bold text-foreground/80 lowercase">
+                                Desenvolvido por <span className="text-primary italic">Gilmar Martinez</span>
+                            </p>
+                            <p className="text-[10px] font-black text-muted-foreground/40 tracking-[0.2em] uppercase">
+                                gil.gmviana@gmail.com
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-8 text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em]">
+                            <p>© 2026 CLINICOPS. TODOS OS DIREITOS RESERVADOS.</p>
                         </div>
                     </div>
                 </div>

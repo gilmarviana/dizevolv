@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { clinicUserService, type ClinicUser } from "@/services/clinicUserService"
+import { clinicUserService } from "@/services/clinicUserService"
+import { type ClinicUser } from "@/types"
 import { permissionService } from "@/services/permissionService"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -12,6 +13,7 @@ import {
     Mail,
     User
 } from "lucide-react"
+import { emailService } from "@/services/emailService"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -154,88 +156,90 @@ export default function Team() {
                             <p className="text-sm font-bold text-primary/30 uppercase tracking-[0.2em]">Sincronizando Equipe</p>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-primary/5">
-                                <TableRow className="border-none">
-                                    <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Colaborador</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Cargo / Role</TableHead>
-                                    <TableHead className="font-bold text-xs uppercase text-primary/60">Status</TableHead>
-                                    <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users.map((member) => (
-                                    <TableRow key={member.id} className="group hover:bg-white/60 transition-colors border-primary/5">
-                                        <TableCell className="py-5 px-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                    {member.nome?.substring(0, 1) || member.email?.substring(0, 1)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-foreground/70">{member.nome || 'Usuário Sem Nome'}</p>
-                                                    <p className="text-xs text-muted-foreground/50">{member.email}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <RoleBadge role={member.role} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                                <span className="text-xs font-bold text-green-600/70 uppercase">Ativo</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right px-8">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-primary/10">
-                                                        <MoreVertical className="h-5 w-5 text-muted-foreground" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl medical-shadow border-none">
-                                                    <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase font-extrabold text-muted-foreground/40">Alterar Permissões</DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        className="rounded-xl font-bold py-2.5"
-                                                        onClick={() => handleRoleUpdate(member.id, 'admin')}
-                                                    >
-                                                        Administrador
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="rounded-xl font-bold py-2.5"
-                                                        onClick={() => handleRoleUpdate(member.id, 'doctor')}
-                                                    >
-                                                        Médico / Profissional
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="rounded-xl font-bold py-2.5"
-                                                        onClick={() => handleRoleUpdate(member.id, 'assistant')}
-                                                    >
-                                                        Assistente / Recepção
-                                                    </DropdownMenuItem>
-                                                    {availableRoles.map(role => (
-                                                        <DropdownMenuItem
-                                                            key={role.id}
-                                                            className="rounded-xl font-bold py-2.5"
-                                                            onClick={() => handleRoleUpdate(member.id, role.slug)}
-                                                        >
-                                                            {role.name}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                    <DropdownMenuSeparator className="bg-primary/5" />
-                                                    <DropdownMenuItem
-                                                        className="text-destructive rounded-xl font-bold py-2.5 focus:bg-destructive/5"
-                                                        onClick={() => handleDelete(member.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-3" /> Revogar Acesso
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
+                        <div className="table-responsive-wrapper">
+                            <Table className="min-w-[800px] md:min-w-full table-mobile-compact">
+                                <TableHeader className="bg-primary/5">
+                                    <TableRow className="border-none">
+                                        <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Colaborador</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Cargo / Role</TableHead>
+                                        <TableHead className="font-bold text-xs uppercase text-primary/60">Status</TableHead>
+                                        <TableHead className="text-right py-5 px-8 font-bold text-xs uppercase text-primary/60">Ações</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {users.map((member) => (
+                                        <TableRow key={member.id} className="group hover:bg-white/60 transition-colors border-primary/5">
+                                            <TableCell className="py-5 px-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                        {member.nome?.substring(0, 1) || member.email?.substring(0, 1)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-foreground/70">{member.nome || 'Usuário Sem Nome'}</p>
+                                                        <p className="text-xs text-muted-foreground/50">{member.email}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <RoleBadge role={member.role} />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                                    <span className="text-xs font-bold text-green-600/70 uppercase">Ativo</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right px-8">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-primary/10">
+                                                            <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl medical-shadow border-none">
+                                                        <DropdownMenuLabel className="px-3 pt-2 text-[10px] uppercase font-extrabold text-muted-foreground/40">Alterar Permissões</DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            className="rounded-xl font-bold py-2.5"
+                                                            onClick={() => handleRoleUpdate(member.id, 'admin')}
+                                                        >
+                                                            Administrador
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="rounded-xl font-bold py-2.5"
+                                                            onClick={() => handleRoleUpdate(member.id, 'doctor')}
+                                                        >
+                                                            Médico / Profissional
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="rounded-xl font-bold py-2.5"
+                                                            onClick={() => handleRoleUpdate(member.id, 'assistant')}
+                                                        >
+                                                            Assistente / Recepção
+                                                        </DropdownMenuItem>
+                                                        {availableRoles.map(role => (
+                                                            <DropdownMenuItem
+                                                                key={role.id}
+                                                                className="rounded-xl font-bold py-2.5"
+                                                                onClick={() => handleRoleUpdate(member.id, role.slug)}
+                                                            >
+                                                                {role.name}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                        <DropdownMenuSeparator className="bg-primary/5" />
+                                                        <DropdownMenuItem
+                                                            className="text-destructive rounded-xl font-bold py-2.5 focus:bg-destructive/5"
+                                                            onClick={() => handleDelete(member.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-3" /> Revogar Acesso
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -308,6 +312,14 @@ export default function Team() {
                                 try {
                                     setInviting(true)
                                     await clinicUserService.create(inviteData)
+
+                                    // Send Custom Invite Email via Brevo (non-blocking)
+                                    emailService.sendInviteEmail(
+                                        inviteData.email,
+                                        inviteData.nome,
+                                        profile?.clinica_nome || 'ClinicOps'
+                                    ).catch(console.error)
+
                                     toast.success("Convite enviado com sucesso!")
                                     setIsInviteOpen(false)
                                     setInviteData({ nome: '', email: '', role: 'doctor' })

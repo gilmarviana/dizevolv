@@ -81,7 +81,7 @@ const revenueData = [
 export default function MasterDashboard() {
     const { profile } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
-    const activeTab = searchParams.get("tab") || "clinics"
+    const activeTab = searchParams.get("tab") || "metrics"
     const [clinics, setClinics] = useState<ClinicDetail[]>([])
     const [plans, setPlans] = useState<PlanDetail[]>([])
     const [stats, setStats] = useState({ clinics: 0, patients: 0, users: 0 })

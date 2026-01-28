@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { auditService } from "./auditService"
 
 export interface Subscription {
     id: string
@@ -44,6 +45,9 @@ export const billingService = {
         })
 
         if (error) throw error
+
+        await auditService.log('billing_checkout', 'subscription', priceId, { new_data: { clinicaId, priceId } })
+
         return data
     },
 
@@ -59,6 +63,9 @@ export const billingService = {
         })
 
         if (error) throw error
+
+        await auditService.log('billing_portal', 'billing', clinicaId, { new_data: { clinicaId } })
+
         return data
     },
 
@@ -73,6 +80,9 @@ export const billingService = {
         })
 
         if (error) throw error
+
+        await auditService.log('cancel_subscription', 'subscription', subscriptionId)
+
         return data
     },
 
@@ -88,6 +98,9 @@ export const billingService = {
         })
 
         if (error) throw error
+
+        await auditService.log('update_subscription', 'subscription', subscriptionId, { new_data: { newPriceId } })
+
         return data
     },
 

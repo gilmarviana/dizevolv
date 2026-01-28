@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
-import { documentService, type Document } from "@/services/documentService"
+import { useState, useEffect, memo } from "react"
+import { documentService } from "@/services/documentService"
+import { type PatientDocument } from "@/types"
 import {
     FileText,
     Upload,
@@ -28,14 +29,14 @@ interface PatientDocumentsProps {
     patientName: string
 }
 
-export function PatientDocuments({ patientId, patientName }: PatientDocumentsProps) {
-    const [documents, setDocuments] = useState<Document[]>([])
+export const PatientDocuments = memo(function PatientDocuments({ patientId, patientName }: PatientDocumentsProps) {
+    const [documents, setDocuments] = useState<PatientDocument[]>([])
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
 
     // Delete Modal State
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-    const [docToDelete, setDocToDelete] = useState<Document | null>(null)
+    const [docToDelete, setDocToDelete] = useState<PatientDocument | null>(null)
 
     useEffect(() => {
         loadDocuments()
@@ -69,7 +70,7 @@ export function PatientDocuments({ patientId, patientName }: PatientDocumentsPro
         }
     }
 
-    function handleDelete(doc: Document) {
+    function handleDelete(doc: PatientDocument) {
         setDocToDelete(doc)
         setDeleteConfirmOpen(true)
     }
@@ -187,4 +188,4 @@ export function PatientDocuments({ patientId, patientName }: PatientDocumentsPro
             </AlertDialog>
         </div>
     )
-}
+});

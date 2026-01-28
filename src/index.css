@@ -69,8 +69,32 @@
 
   .medical-shadow {
     box-shadow:
-      0 10px 30px -5px rgba(0, 0, 0, 0.08),
-      0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      0 10px 30px -5px rgba(0, 0, 0, 0.04),
+      0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  }
+
+  .table-responsive-wrapper {
+    @apply overflow-x-auto rounded-xl;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .table-responsive-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Melhoria visual para tabelas em mobile */
+  @media (max-width: 768px) {
+    .table-mobile-compact td {
+      @apply py-3 px-4 text-sm;
+    }
+
+    .table-mobile-compact th {
+      @apply py-3 px-4 text-[10px];
+    }
   }
 
   .premium-shadow {

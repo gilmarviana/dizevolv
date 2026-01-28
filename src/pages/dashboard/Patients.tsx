@@ -3,7 +3,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { patientService, type Patient } from "@/services/patientService"
+import { patientService } from "@/services/patientService"
+import { type Patient } from "@/types"
 import {
     Plus,
     Search,
@@ -334,8 +335,8 @@ export default function Patients() {
                             <p className="text-sm font-bold text-primary/30 uppercase tracking-[0.2em]">Sincronizando Base</p>
                         </div>
                     ) : (
-                        <div className="">
-                            <Table>
+                        <div className="table-responsive-wrapper">
+                            <Table className="min-w-[800px] md:min-w-full table-mobile-compact">
                                 <TableHeader className="bg-primary/5">
                                     <TableRow className="border-none">
                                         <TableHead className="py-5 px-8 font-bold text-xs uppercase text-primary/60">Paciente</TableHead>

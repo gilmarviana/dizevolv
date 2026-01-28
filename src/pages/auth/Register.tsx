@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { supabase } from "@/lib/supabase"
 import { Stethoscope, Mail, Lock, Building, ArrowRight, Loader2, CheckCircle } from "lucide-react"
+import { emailService } from "@/services/emailService"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -79,6 +80,10 @@ export default function Register() {
                 }
 
                 setSuccess(true)
+
+                // Send Welcome Email (non-blocking)
+                emailService.sendWelcomeEmail(values.email, values.nomeClinica).catch(console.error)
+
                 setTimeout(() => navigate("/auth/login"), 3000)
             }
         } catch (err: any) {

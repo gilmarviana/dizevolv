@@ -1,20 +1,8 @@
 import { supabase } from "@/lib/supabase"
 import { auditService } from "./auditService"
+import { emailService } from "./emailService"
 
-export interface Appointment {
-    id: string
-    clinica_id: string
-    paciente_id: string
-    usuario_id: string
-    status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
-    tipo: string
-    observacoes?: string
-    data_hora: string
-    created_at: string
-    paciente?: {
-        nome: string
-    }
-}
+import { type Appointment } from "@/types"
 
 export const appointmentService = {
     async getAll() {
@@ -55,11 +43,34 @@ export const appointmentService = {
 
         if (error) throw error
 
-        // Log audit (non-blocking)
+        // Log audit and Notify Patient (non-blocking)
         try {
             await auditService.log('create', 'appointment', data.id, { new_data: data })
-        } catch (auditError) {
-            console.warn('Audit log failed:', auditError)
+
+            // Fetch Patient Email and Clinic Name for notification
+            const { data: contactData } = await supabase
+                .from('pacientes')
+                .select('nome, email')
+                .eq('id', appointment.patient_id)
+                .single()
+
+            const { data: clinicData } = await supabase
+                .from('clinicas')
+                .select('nome')
+                .eq('id', clinica_id)
+                .single()
+
+            if (contactData?.email) {
+                emailService.sendAppointmentConfirmation(
+                    contactData.email,
+                    contactData.nome,
+                    appointment.date,
+                    appointment.type,
+                    clinicData?.nome || 'ClinicOps'
+                ).catch(console.error)
+            }
+        } catch (notifierError) {
+            console.warn('Post-creation notification/audit failed:', notifierError)
         }
 
         return data

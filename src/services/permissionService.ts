@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { auditService } from "./auditService"
 
 export interface RolePermission {
     id?: string
@@ -34,6 +35,9 @@ export const permissionService = {
             .single()
 
         if (error) throw error
+
+        await auditService.log('update_permission', 'permission', data.id || 'upsert', { new_data: data })
+
         return data as RolePermission
     },
 
@@ -57,6 +61,9 @@ export const permissionService = {
             .single()
 
         if (error) throw error
+
+        await auditService.log('create_role', 'role', data.id, { new_data: data })
+
         return data
     },
 
@@ -67,6 +74,9 @@ export const permissionService = {
             .eq('id', roleId)
 
         if (error) throw error
+
+        await auditService.log('delete_role', 'role', roleId, { old_data: { id: roleId } })
+
         return true
     },
 
