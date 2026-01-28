@@ -1,0 +1,94 @@
+import { supabase } from "@/lib/supabase"
+import { auditService } from "./auditService"
+
+export interface Appointment {
+    id: string
+    clinica_id: string
+    paciente_id: string
+    usuario_id: string
+    status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
+    tipo: string
+    observacoes?: string
+    data_hora: string
+    created_at: string
+    paciente?: {
+        nome: string
+    }
+}
+
+export const appointmentService = {
+    async getAll() {
+        const { data, error } = await supabase
+            .from('atendimentos')
+            .select('*, paciente:pacientes(nome)')
+            .order('data_hora', { ascending: true })
+
+        if (error) throw error
+        return data as any[]
+    },
+
+    async create(appointment: { patient_id: string, date: string, type: string, notes?: string, status: string }) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("User not authenticated")
+
+        const { data: userProfile } = await supabase
+            .from('usuarios')
+            .select('clinica_id')
+            .eq('id', user.id)
+            .single()
+
+        const clinica_id = userProfile?.clinica_id
+
+        const { data, error } = await supabase
+            .from('atendimentos')
+            .insert([{
+                clinica_id: clinica_id,
+                paciente_id: appointment.patient_id,
+                usuario_id: user.id,
+                data_hora: appointment.date,
+                status: appointment.status,
+                tipo: appointment.type,
+                observacoes: appointment.notes
+            }])
+            .select()
+            .single()
+
+        if (error) throw error
+
+        await auditService.log('create', 'appointment', data.id, { new_data: data })
+
+        return data
+    },
+
+    async updateStatus(id: string, status: string) {
+        const { data: oldData } = await supabase.from('atendimentos').select('*').eq('id', id).single()
+
+        const { data, error } = await supabase
+            .from('atendimentos')
+            .update({ status })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) throw error
+
+        await auditService.log('update_status', 'appointment', id, { old_data: oldData, new_data: data })
+
+        return data
+    },
+
+    async delete(id: string) {
+        const { data: oldData } = await supabase.from('atendimentos').select('*').eq('id', id).single()
+
+        const { error } = await supabase
+            .from('atendimentos')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+
+        await auditService.log('delete', 'appointment', id, { old_data: oldData })
+
+        return true
+    }
+}
