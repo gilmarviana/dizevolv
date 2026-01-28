@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -31,7 +31,7 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -84,7 +84,7 @@ const formSchema = z.object({
 })
 
 export default function Patients() {
-    const { profile } = useAuth()
+    const { } = useAuth()
     const { can, loading: loadingPermissions } = usePermission()
     const [patients, setPatients] = useState<Patient[]>([])
     const [loading, setLoading] = useState(true)

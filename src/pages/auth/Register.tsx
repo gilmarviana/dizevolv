@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { supabase } from "@/lib/supabase"
-import { Stethoscope, User, Mail, Lock, Building, ArrowRight, Loader2, CheckCircle } from "lucide-react"
+import { Stethoscope, Mail, Lock, Building, ArrowRight, Loader2, CheckCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {

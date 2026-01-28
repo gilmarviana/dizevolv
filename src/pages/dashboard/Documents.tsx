@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react"
-import { documentService, type Document } from "@/services/documentService"
+import { documentService } from "@/services/documentService"
 import { patientService, type Patient } from "@/services/patientService"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -8,7 +8,6 @@ import {
     Upload,
     Trash2,
     Loader2,
-    File,
     ExternalLink,
     Search,
     Filter,
@@ -48,7 +47,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
 export default function Documents() {
-    const { user } = useAuth()
+    const { } = useAuth()
     const [documents, setDocuments] = useState<any[]>([])
     const [filteredDocuments, setFilteredDocuments] = useState<any[]>([])
     const [patients, setPatients] = useState<Patient[]>([])

@@ -22,9 +22,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
-import { Progress } from "@/components/ui/progress"
 import { Navigate, useNavigate } from "react-router-dom"
-import { Sparkles, Crown, MoreVertical, Settings2, Trash2, ExternalLink } from "lucide-react"
+import { Sparkles, Crown, MoreVertical, Settings2, Trash2 } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,6 +32,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
 
 const data = [
@@ -49,9 +56,15 @@ export default function DashboardHome() {
     const { profile } = useAuth()
     const navigate = useNavigate()
     const [patientCount, setPatientCount] = useState(0)
-    const [planInfo, setPlanInfo] = useState<{ nombre: string, limit: number } | null>(null)
+    const [planInfo, setPlanInfo] = useState<{
+        nombre: string,
+        limit: number,
+        vencimento: string | null,
+        isCancelling: boolean
+    } | null>(null)
     const [trialDaysRemaining, setTrialDaysRemaining] = useState<number>(0)
     const [isOnTrial, setIsOnTrial] = useState<boolean>(false)
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
 
     useEffect(() => {
         if (profile?.clinica_id) {
@@ -82,12 +95,15 @@ export default function DashboardHome() {
 
             if (clinic) {
                 // Supabase might return an array or object for joins
-                const planData = Array.isArray(clinic.plans) ? clinic.plans[0] : clinic.plans;
+                const clinicAny = clinic as any;
+                const planData = Array.isArray(clinicAny.plans) ? clinicAny.plans[0] : clinicAny.plans;
 
                 if (planData) {
                     setPlanInfo({
                         nombre: planData.nome,
-                        limit: planData.limite_pacientes
+                        limit: planData.limite_pacientes,
+                        vencimento: clinic.trial_ends_at,
+                        isCancelling: !!clinic.cancel_at_period_end
                     })
                 }
             }
@@ -129,24 +145,24 @@ export default function DashboardHome() {
     }
 
     async function handleCancelSubscription() {
-        if (!window.confirm('Tem certeza que deseja cancelar sua assinatura? Você voltará para o modo Trial.')) return
-
         try {
             const { error } = await supabase
                 .from('clinicas')
                 .update({
-                    status: 'trial',
-                    trial_ends_at: new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString() // Mais 7 dias de trial ao cancelar? Ou mantém o que tinha.
+                    cancel_at_period_end: true
                 })
                 .eq('id', profile?.clinica_id)
 
             if (error) throw error
 
-            toast.success('Assinatura cancelada com sucesso. Você agora está no modo Trial.')
-            window.location.reload() // Refresh to update all UI
+            toast.success('Cancelamento agendado para o final do período.', {
+                description: 'Você continuará tendo acesso até o vencimento.'
+            })
+            setIsCancelModalOpen(false)
+            loadStats()
         } catch (error) {
             console.error('Error cancelling subscription:', error)
-            toast.error('Erro ao cancelar assinatura.')
+            toast.error('Erro ao agendar cancelamento.')
         }
     }
 
@@ -232,50 +248,116 @@ export default function DashboardHome() {
 
                 {planInfo && (
                     <div className="flex items-center gap-2">
-                        <Card className="border-none bg-primary/5 shadow-none px-4 py-2 flex items-center gap-3 rounded-2xl h-14">
-                            <div className="p-2 bg-primary/10 rounded-full">
-                                <Crown className="h-4 w-4 text-primary" />
+                        <Card className={`border-none ${planInfo.isCancelling ? 'bg-destructive/5' : 'bg-primary/5'} shadow-none px-6 py-2 flex items-center gap-4 rounded-2xl h-14 transition-all`}>
+                            <div className={`p-2 ${planInfo.isCancelling ? 'bg-destructive/10' : 'bg-primary/10'} rounded-full`}>
+                                <Crown className={`h-4 w-4 ${planInfo.isCancelling ? 'text-destructive' : 'text-primary'}`} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 leading-none mb-1">Seu Plano</p>
-                                <p className="text-sm font-black text-primary uppercase">{planInfo.nombre}</p>
-                            </div>
-                            <div className="h-8 w-[1px] bg-primary/10 mx-1" />
-                            <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Capacidade</p>
-                                <p className="text-sm font-black text-foreground">
-                                    {patientCount} <span className="text-muted-foreground">/ {planInfo.limit}</span>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">
+                                    {planInfo.isCancelling ? 'Cancelamento Agendado' : 'Seu Plano'}
+                                </p>
+                                <p className={`text-sm font-black uppercase ${planInfo.isCancelling ? 'text-destructive' : 'text-primary'}`}>
+                                    {planInfo.nombre}
                                 </p>
                             </div>
+
+                            <div className="h-8 w-[1px] bg-border mx-1" />
+
+                            <div className="text-right">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Capacidade</p>
+                                <p className="text-sm font-black text-foreground">
+                                    {patientCount} <span className="text-muted-foreground/60">/ {planInfo.limit}</span>
+                                </p>
+                            </div>
+
+                            {planInfo.vencimento && (
+                                <>
+                                    <div className="h-8 w-[1px] bg-border mx-1" />
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Vencimento</p>
+                                        <p className="text-sm font-black text-foreground">
+                                            {new Date(planInfo.vencimento).toLocaleDateString('pt-BR')}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </Card>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-14 w-10 rounded-2xl bg-primary/5 hover:bg-primary/10 border-none transition-all">
-                                    <MoreVertical className="h-5 w-5 text-primary" />
+                                <Button variant="ghost" size="icon" className="h-14 w-10 rounded-2xl bg-muted/50 hover:bg-muted border-none transition-all">
+                                    <MoreVertical className="h-5 w-5 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl medical-shadow">
-                                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-3 py-2">Gerenciar Plano</DropdownMenuLabel>
+                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl md-shadow">
+                                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-3 py-2">Opções de Assinatura</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => navigate('/dashboard/billing')} className="rounded-xl flex items-center gap-2 p-3 cursor-pointer group">
                                     <Settings2 className="h-4 w-4 text-primary transition-transform group-hover:rotate-12" />
-                                    <span className="font-bold text-sm">Mudar Plano</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate('/dashboard/billing')} className="rounded-xl flex items-center gap-2 p-3 cursor-pointer group">
-                                    <ExternalLink className="h-4 w-4 text-blue-500" />
-                                    <span className="font-bold text-sm">Ver Detalhes</span>
+                                    <span className="font-bold text-sm">Alterar Plano</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleCancelSubscription} className="rounded-xl flex items-center gap-2 p-3 cursor-pointer group text-destructive focus:bg-destructive/10">
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="font-bold text-sm">Cancelar Plano</span>
-                                </DropdownMenuItem>
+                                {!planInfo.isCancelling && (
+                                    <DropdownMenuItem onClick={() => setIsCancelModalOpen(true)} className="rounded-xl flex items-center gap-2 p-3 cursor-pointer group text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="font-bold text-sm">Cancelar no final</span>
+                                    </DropdownMenuItem>
+                                )}
+                                {planInfo.isCancelling && (
+                                    <DropdownMenuItem
+                                        onClick={async () => {
+                                            await supabase.from('clinicas').update({ cancel_at_period_end: false }).eq('id', profile?.clinica_id)
+                                            loadStats()
+                                            toast.success('Cancelamento revertido!')
+                                        }}
+                                        className="rounded-xl flex items-center gap-2 p-3 cursor-pointer group text-primary focus:bg-primary/10"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="font-bold text-sm">Manter Assinatura</span>
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 )}
             </div>
+
+            {/* Cancel Modal */}
+            <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black uppercase tracking-tight italic">Confirmar Cancelamento?</DialogTitle>
+                        <DialogDescription className="font-medium text-muted-foreground leading-relaxed">
+                            Ao confirmar, sua assinatura será interrompida apenas em <span className="font-bold text-foreground">{planInfo?.vencimento ? new Date(planInfo.vencimento).toLocaleDateString('pt-BR') : 'no final do período'}</span>.
+                            Até lá, você continuará com acesso total a todos os recursos do plano <span className="font-bold text-primary">{planInfo?.nombre}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex gap-3">
+                            <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold text-amber-800/80">
+                                Após o cancelamento, sua clínica entrará no modo trial e o cadastro de novos pacientes poderá ser limitado.
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex gap-2 sm:gap-0">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsCancelModalOpen(false)}
+                            className="flex-1 font-bold uppercase tracking-widest text-[10px] rounded-xl"
+                        >
+                            Manter Plano
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleCancelSubscription}
+                            className="flex-1 font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-destructive/20"
+                        >
+                            Confirmar Cancelamento
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat, index) => (

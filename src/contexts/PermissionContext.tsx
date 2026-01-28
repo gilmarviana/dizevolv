@@ -17,7 +17,7 @@ const PermissionContext = createContext<PermissionContextType>({
 })
 
 export function PermissionProvider({ children }: { children: React.ReactNode }) {
-    const { user, profile } = useAuth()
+    const { profile } = useAuth()
     const [permissions, setPermissions] = useState<RolePermission[]>([])
     const [loading, setLoading] = useState(true)
 

@@ -159,26 +159,6 @@ export default function Appointments() {
         }
     }
 
-    async function recreateSampleData() {
-        if (!confirm("Isso irá recriar os agendamentos de exemplo. Continuar?")) return
-
-        try {
-            setLoading(true)
-            const patientsData = await patientService.getAll()
-            if (patientsData.length === 0) {
-                toast.error("Cadastre pacientes primeiro para criar agendamentos de exemplo.")
-                return
-            }
-
-            await createSampleAppointments(patientsData)
-            toast.success("Agendamentos de exemplo recriados!")
-            window.location.reload()
-        } catch (error) {
-            toast.error("Erro ao recriar agendamentos.")
-        } finally {
-            setLoading(false)
-        }
-    }
 
     async function createSampleAppointments(patients: Patient[]) {
         const appointmentTypes = [
