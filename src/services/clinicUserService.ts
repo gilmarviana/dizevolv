@@ -56,14 +56,14 @@ export const clinicUserService = {
 
             if (error instanceof Error) {
                 try {
-                    // @ts-ignore - Supabase invite implementation might return body in a specific way or just message
+                    // @ts-expect-error - Supabase invite implementation might return body in a specific way or just message
                     const body = await error.context?.json()
                     if (body && body.error) {
                         errorMessage = body.error
                     } else {
                         errorMessage = error.message
                     }
-                } catch (e) {
+                } catch (_e) {
                     errorMessage = error.message
                 }
             }

@@ -82,7 +82,7 @@ export default function Team() {
         try {
             const roles = await permissionService.getRoles(profile.clinica_id)
             setAvailableRoles(roles)
-        } catch (error) {
+        } catch (_error) {
             console.error("Error loading roles")
         }
     }
@@ -92,7 +92,7 @@ export default function Team() {
             setLoading(true)
             const data = await clinicUserService.getAll()
             setUsers(data)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao sincronizar equipe.")
         } finally {
             setLoading(false)
@@ -104,7 +104,7 @@ export default function Team() {
             await clinicUserService.updateRole(userId, newRole)
             toast.success("Permissão atualizada.")
             loadTeam()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao atualizar permissão.")
         }
     }
@@ -120,7 +120,7 @@ export default function Team() {
             await clinicUserService.deleteUser(userId)
             toast.success("Membro removido.")
             loadTeam()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao remover usuário.")
         }
     }

@@ -22,25 +22,6 @@ export default function Billing() {
     const [checkoutOpen, setCheckoutOpen] = useState(false)
     const [selectedPlan, setSelectedPlan] = useState<{ name: string, id: string, amount: number } | null>(null)
 
-    useEffect(() => {
-        const init = async () => {
-            setLoading(true)
-            await Promise.all([
-                loadPlans(),
-                loadSubscriptionData()
-            ])
-            setLoading(false)
-        }
-        init()
-    }, [])
-
-    useEffect(() => {
-        if (currentSubscription) {
-            console.log('Billing - Current Sub Plan ID:', currentSubscription.plan_id);
-            console.log('Billing - Loaded DB Plans:', dbPlans.map(p => ({ id: p.id, name: p.nome })));
-        }
-    }, [currentSubscription, dbPlans]);
-
     async function loadPlans() {
         try {
             const plans = await masterService.getPlans()
@@ -94,6 +75,25 @@ export default function Billing() {
             console.error('Error loading data:', error)
         }
     }
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true)
+            await Promise.all([
+                loadPlans(),
+                loadSubscriptionData()
+            ])
+            setLoading(false)
+        }
+        init()
+    }, [])
+
+    useEffect(() => {
+        if (currentSubscription) {
+            console.log('Billing - Current Sub Plan ID:', currentSubscription.plan_id);
+            console.log('Billing - Loaded DB Plans:', dbPlans.map(p => ({ id: p.id, name: p.nome })));
+        }
+    }, [currentSubscription, dbPlans]);
 
     async function handleSubscribe(planId: string, planName: string) {
         if (!clinicaId) {
@@ -207,7 +207,7 @@ export default function Billing() {
 
             <div id="plans-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-6">
                 {dbPlans.map((plan) => {
-                    // @ts-ignore
+
                     const isCurrent = String(currentSubscription?.plan_id) === String(plan.id);
 
                     return (

@@ -167,7 +167,7 @@ export default function Permissions() {
                 can_delete: newPermissions.delete
             })
             toast.success("Permissão salva.")
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao salvar permissão.")
             loadPermissions()
         }
@@ -189,7 +189,7 @@ export default function Permissions() {
             setIsRoleDialogOpen(false)
             await loadRoles()
             setSelectedRole(slug)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao criar perfil. Tente um nome diferente.")
         }
     }

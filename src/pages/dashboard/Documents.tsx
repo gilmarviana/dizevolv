@@ -48,7 +48,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
 export default function Documents() {
-    const { } = useAuth()
+    useAuth()
     const [documents, setDocuments] = useState<any[]>([])
     const [filteredDocuments, setFilteredDocuments] = useState<any[]>([])
     const [patients, setPatients] = useState<Patient[]>([])
@@ -144,7 +144,7 @@ export default function Documents() {
             await documentService.delete(docToDelete.id, docToDelete.url)
             toast.success("Documento removido.")
             setDocuments(prev => prev.filter(d => d.id !== docToDelete.id))
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao excluir arquivo.")
         } finally {
             setDeleteConfirmOpen(false)

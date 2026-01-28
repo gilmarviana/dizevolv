@@ -47,7 +47,7 @@ export const PatientDocuments = memo(function PatientDocuments({ patientId, pati
             setLoading(true)
             const data = await documentService.getByPatient(patientId)
             setDocuments(data)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao carregar documentos.")
         } finally {
             setLoading(false)
@@ -82,7 +82,7 @@ export const PatientDocuments = memo(function PatientDocuments({ patientId, pati
             await documentService.delete(docToDelete.id, docToDelete.url)
             toast.success("Documento removido.")
             setDocuments(prev => prev.filter(d => d.id !== docToDelete.id))
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao excluir arquivo.")
         } finally {
             setDeleteConfirmOpen(false)

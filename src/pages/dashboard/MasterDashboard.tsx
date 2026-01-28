@@ -132,7 +132,7 @@ export default function MasterDashboard() {
             setClinics(clinicsData)
             setPlans(plansData)
             setStats(statsData)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao carregar dados da plataforma.")
         } finally {
             setLoading(false)
@@ -144,7 +144,7 @@ export default function MasterDashboard() {
             await masterService.updateClinicStatus(clinicId, status)
             toast.success("Status atualizado.")
             loadAllData()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao atualizar status.")
         }
     }
@@ -163,7 +163,7 @@ export default function MasterDashboard() {
                     setSelectedClinic({ ...updated, plano_id: planoId, plano: { nome: newPlan?.nome || '' } });
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao atualizar plano.")
         }
     }
@@ -191,7 +191,7 @@ export default function MasterDashboard() {
             toast.success(editingPlan.id ? "Plano atualizado." : "Plano criado.")
             setIsPlanDialogOpen(false)
             loadAllData()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao salvar plano.")
         }
     }
@@ -204,7 +204,7 @@ export default function MasterDashboard() {
             setIsDeleteDialogOpen(false)
             setPlanToDelete(null)
             loadAllData()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao remover plano. Verifique se existem clínicas vinculadas.")
         }
     }

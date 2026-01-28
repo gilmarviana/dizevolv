@@ -85,7 +85,7 @@ const formSchema = z.object({
 })
 
 export default function Patients() {
-    const { } = useAuth()
+    useAuth()
     const { can, loading: loadingPermissions } = usePermission()
     const [patients, setPatients] = useState<Patient[]>([])
     const [loading, setLoading] = useState(true)
@@ -111,7 +111,7 @@ export default function Patients() {
             setLoading(true)
             const data = await patientService.getAll()
             setPatients(data)
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao sincronizar pacientes.")
         } finally {
             setLoading(false)
@@ -132,7 +132,7 @@ export default function Patients() {
             setIsAdding(false)
             setEditingPatient(null)
             loadPatients()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao processar solicitação.")
         } finally {
             setSubmitting(false)
@@ -161,7 +161,7 @@ export default function Patients() {
             await patientService.delete(patientToDelete)
             toast.success("Paciente excluído com sucesso.")
             loadPatients()
-        } catch (error) {
+        } catch (_error) {
             toast.error("Erro ao excluir paciente.")
         } finally {
             setIsDeleteOpen(false)
