@@ -357,7 +357,7 @@ export function LandingPage() {
 
                                         <div className={`mb-10 ${isPremium ? 'text-white' : 'text-foreground'}`}>
                                             <span className={`text-xs font-black align-top mr-1 ${isPremium ? 'text-white/40' : 'text-muted-foreground'}`}>R$</span>
-                                            <span className={`${isLargeGrid ? 'text-5xl' : 'text-7xl'} font-black tracking-tighter`}>{plan.preco_mensal.toString().split('.')[0]}</span>
+                                            <span className={`${isLargeGrid ? 'text-5xl' : 'text-7xl'} font-black tracking-tighter`}>{(plan.preco_mensal / 100).toString().split('.')[0]}</span>
                                             <span className={`font-black ml-1 text-base ${isPremium ? 'text-white/40' : 'text-muted-foreground'}`}>/mês</span>
                                         </div>
 

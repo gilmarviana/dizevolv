@@ -92,7 +92,7 @@ export default function MasterDashboard() {
     const totalMRR = clinics.reduce((acc, clinic) => {
         const plan = plans.find(p => p.id === clinic.plano_id);
         return acc + (Number(plan?.preco_mensal) || 0);
-    }, 0);
+    }, 0) / 100;
 
     const planDistribution = plans.map(plan => ({
         id: plan.id,
@@ -182,7 +182,11 @@ export default function MasterDashboard() {
                 toast.error("Preencha os campos obrigatórios.")
                 return
             }
-            await masterService.savePlan(editingPlan)
+            const planToSave = {
+                ...editingPlan,
+                preco_mensal: Math.round((editingPlan.preco_mensal || 0) * 100)
+            };
+            await masterService.savePlan(planToSave)
             toast.success(editingPlan.id ? "Plano atualizado." : "Plano criado.")
             setIsPlanDialogOpen(false)
             loadAllData()
@@ -379,7 +383,13 @@ export default function MasterDashboard() {
                                         <div className="flex items-center justify-between">
                                             <CardTitle className="text-xl font-black text-foreground/70 uppercase tracking-tight">{plan.nome}</CardTitle>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setEditingPlan(plan); setIsPlanDialogOpen(true) }}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => {
+                                                    setEditingPlan({
+                                                        ...plan,
+                                                        preco_mensal: Number(plan.preco_mensal) / 100
+                                                    });
+                                                    setIsPlanDialogOpen(true);
+                                                }}>
                                                     <Settings2 className="h-4 w-4" />
                                                 </Button>
                                                 <Button
@@ -393,7 +403,7 @@ export default function MasterDashboard() {
                                             </div>
                                         </div>
                                         <CardDescription className="text-2xl font-black text-primary mt-2">
-                                            R$ {Number(plan.preco_mensal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
+                                            R$ {(Number(plan.preco_mensal) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-muted-foreground font-normal">/mês</span>
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-6 pt-4">
@@ -512,7 +522,7 @@ export default function MasterDashboard() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-black text-foreground/70">
-                                                    R$ {Number(plans.find(p => p.id === clinic.plano_id)?.preco_mensal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    R$ {(Number(plans.find(p => p.id === clinic.plano_id)?.preco_mensal || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                 </TableCell>
                                                 <TableCell className="text-xs font-bold text-muted-foreground/60 italic">
                                                     Todo dia {new Date(clinic.created_at).getDate()}
@@ -564,7 +574,7 @@ export default function MasterDashboard() {
                                     type="number"
                                     placeholder="0.00"
                                     className="rounded-xl h-12"
-                                    value={editingPlan?.preco_mensal || ""}
+                                    value={editingPlan?.preco_mensal ? editingPlan.preco_mensal : ""}
                                     onChange={e => setEditingPlan({ ...editingPlan, preco_mensal: parseFloat(e.target.value) })}
                                 />
                             </div>
@@ -607,7 +617,7 @@ export default function MasterDashboard() {
                         <div className="grid grid-cols-3 gap-4">
                             <div className="bg-white/50 p-4 rounded-2xl border border-primary/5">
                                 <p className="text-[10px] font-black text-primary/40 uppercase mb-1">Faturamento</p>
-                                <p className="text-lg font-black text-foreground/80">R$ {Number(plans.find(p => p.id === selectedClinic?.plano_id)?.preco_mensal || 0).toLocaleString('pt-BR')}</p>
+                                <p className="text-lg font-black text-foreground/80">R$ {(Number(plans.find(p => p.id === selectedClinic?.plano_id)?.preco_mensal || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                             </div>
                             <div className="bg-white/50 p-4 rounded-2xl border border-primary/5">
                                 <p className="text-[10px] font-black text-primary/40 uppercase mb-1">Vencimento</p>
@@ -641,7 +651,7 @@ export default function MasterDashboard() {
                                                 onClick={() => handlePlanChange(selectedClinic!.id, plan.id)}
                                                 className={`rounded-xl font-bold py-2 ${selectedClinic?.plano_id === plan.id ? 'bg-primary/5 text-primary' : ''}`}
                                             >
-                                                {plan.nome} - R$ {plan.preco_mensal.toLocaleString()}
+                                                {plan.nome} - R$ {(plan.preco_mensal / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </DropdownMenuItem>
                                         ))}
                                     </DropdownMenuContent>

@@ -37,3 +37,18 @@ npm run dev
 - **Autenticação:** Login e Cadastro de Clínicas (`/auth/login`, `/auth/register`)
 - **Dashboard:** `/dashboard` (Protegido)
 - **Pacientes:** Listagem e Cadastro com isolamento por clínica (RLS).
+
+## Testes Automatizados
+
+Esta plataforma utiliza Vitest para testes unitários e Playwright para testes de ponta a ponta (E2E).
+
+```bash
+# Executar testes unitários
+npm test
+
+# Executar testes unitários com interface visual
+npm run test:ui
+
+# Executar testes E2E (Playwright)
+npx playwright test
+```
