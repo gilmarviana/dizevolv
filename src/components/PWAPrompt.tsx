@@ -38,6 +38,7 @@ export function PWAPrompt() {
     const close = () => {
         setOfflineReady(false)
         setNeedRefresh(false)
+        setInstallPrompt(null)
     }
 
     if (!offlineReady && !needRefresh && !installPrompt) return null

@@ -64,18 +64,22 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-transparent relative">
-            <Link to="/" className="absolute top-8 left-8 group transition-all">
-                <Button variant="ghost" className="rounded-2xl font-black text-muted-foreground hover:text-primary gap-2 h-12 px-6">
-                    <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                    Voltar ao Site
-                </Button>
-            </Link>
+
             <div className="w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-700">
                 <div className="flex items-center justify-center gap-3 mb-10">
                     <div className="bg-primary/20 rounded-2xl p-2.5 shadow-sm border border-primary/30">
                         <Heart className="h-8 w-8 text-primary" />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground/70">Clinic<span className="text-primary italic">Ops</span></h1>
+                </div>
+
+                <div className="flex justify-center mb-6">
+                    <Link to="/" className="group transition-all">
+                        <Button variant="ghost" className="rounded-2xl font-bold text-muted-foreground hover:text-primary gap-2 h-10 px-6">
+                            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                            Voltar ao Site
+                        </Button>
+                    </Link>
                 </div>
 
                 <Card className="glass border-none medical-shadow p-2">
